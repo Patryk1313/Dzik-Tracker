@@ -77,6 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     } catch (error) {
       showError(getFriendlyError(error));
+      toggleLoading(false);
       console.error(error);
     }
   });
@@ -225,8 +226,8 @@ async function initHomePage(user) {
   hideMessages();
 
   const [userProfile, workouts, allWorkoutsResult] = await Promise.all([
-    getUserProfile(user.uid),
-    getUserWorkouts(user.uid),
+    getUserProfileSafe(user.uid),
+    getUserWorkoutsSafe(user.uid),
     getAllWorkoutsSafe(),
   ]);
   const workoutIds = workouts.map((workout) => workout.id);
@@ -421,7 +422,7 @@ async function initDashboardPage(user) {
   toggleLoading(true);
   hideMessages();
 
-  const workouts = await getUserWorkouts(user.uid);
+  const workouts = await getUserWorkoutsSafe(user.uid);
   const workoutIds = workouts.map((workout) => workout.id);
   const exercisesByWorkout = await getExercisesByWorkoutIds(workoutIds);
 
@@ -936,8 +937,7 @@ async function initProfilePage(user) {
   toggleLoading(true);
   hideMessages();
 
-  const userRef = doc(db, "users", user.uid);
-  const userSnap = await getDoc(userRef);
+  const profileData = (await getUserProfileSafe(user.uid)) || {};
 
   const profileName = document.getElementById("profileName");
   const profileBirthDate = document.getElementById("profileBirthDate");
@@ -948,7 +948,6 @@ async function initProfilePage(user) {
   const profileDisplayName = document.getElementById("profileDisplayName");
   const profileDisplayEmail = document.getElementById("profileDisplayEmail");
 
-  const profileData = userSnap.exists() ? userSnap.data() : {};
   const nameValue = profileData.name || "-";
   const emailValue = profileData.email || user.email || "-";
   const createdValue = formatTimestamp(profileData.createdAt) || "-";
@@ -985,8 +984,7 @@ async function initProfileEditPage(user) {
   hideMessages();
 
   const userRef = doc(db, "users", user.uid);
-  const userSnap = await getDoc(userRef);
-  let profileData = userSnap.exists() ? userSnap.data() : {};
+  let profileData = (await getUserProfileSafe(user.uid)) || {};
 
   const currentNameEl = document.getElementById("currentProfileName");
   const currentBirthDateEl = document.getElementById("currentProfileBirthDate");
@@ -1170,7 +1168,7 @@ async function initWorkoutsPage(user) {
   toggleLoading(true);
   hideMessages();
 
-  workoutsPageCache = await getUserWorkouts(user.uid);
+  workoutsPageCache = await getUserWorkoutsSafe(user.uid);
   const workoutIds = workoutsPageCache.map((workout) => workout.id);
   workoutsExercisesCache = await getExercisesByWorkoutIds(workoutIds);
 
@@ -1452,6 +1450,18 @@ async function getUserProfile(userId) {
   return userSnap.exists() ? userSnap.data() : null;
 }
 
+async function getUserProfileSafe(userId) {
+  try {
+    return await getUserProfile(userId);
+  } catch (error) {
+    if (String(error?.code || "").includes("permission-denied")) {
+      return null;
+    }
+
+    throw error;
+  }
+}
+
 async function getUserWorkouts(userId) {
   const q = query(collection(db, "workouts"), where("userId", "==", userId));
   const snapshot = await getDocs(q);
@@ -1462,6 +1472,18 @@ async function getUserWorkouts(userId) {
   }));
 
   return workouts.sort((a, b) => new Date(b.date) - new Date(a.date));
+}
+
+async function getUserWorkoutsSafe(userId) {
+  try {
+    return await getUserWorkouts(userId);
+  } catch (error) {
+    if (String(error?.code || "").includes("permission-denied")) {
+      return [];
+    }
+
+    throw error;
+  }
 }
 
 async function getAllWorkouts() {
@@ -1566,21 +1588,15 @@ function renderWorkoutHistory(workouts, exercisesByWorkout) {
 
   const visibleItems = homeHistoryExpanded ? workouts : workouts.slice(0, 6);
   const items = visibleItems.map((workout) => {
-    const exercises = exercisesByWorkout[workout.id] || [];
-    const names = exercises.map((exercise) => escapeHtml(exercise.name)).slice(0, 2).join(" + ");
     const title = workout.title
       ? escapeHtml(workout.title)
       : workout.notes
         ? escapeHtml(workout.notes)
-        : names || "Bez opisu";
-    const description = workout.notes ? escapeHtml(workout.notes) : "Bez notatki";
+        : "Trening";
 
     return `
       <li class="history-entry">
-        <strong class="history-date">${formatDate(workout.date)}</strong>
         <strong class="history-title">${title}</strong>
-        <span class="text-muted">${description}</span>
-        <span class="history-notes text-muted">${names || "Brak listy cwiczen"}</span>
       </li>
     `;
   });
@@ -1645,7 +1661,7 @@ async function renderGlobalRanking(workouts, hasPermission = true, currentUserId
   const profiles = await Promise.all(
     ranking.map(async (entry) => ({
       userId: entry.userId,
-      profile: await getUserProfile(entry.userId),
+      profile: await getUserProfileSafe(entry.userId),
     }))
   );
   const profileById = new Map(profiles.map((entry) => [entry.userId, entry.profile]));
@@ -1839,7 +1855,7 @@ function renderDashboardStrengthChart(workouts, exercisesByWorkout, range = 12) 
   const end = series[series.length - 1].value;
   const delta = end - start;
   const sign = delta > 0 ? "+" : "";
-  summaryEl.textContent = `Zakres ${range} treningow | zmiana: ${sign}${delta.toFixed(1)} kg`;
+  summaryEl.textContent = `Top ciezar, zakres ${range} treningow, zmiana ${sign}${delta.toFixed(1)} kg`;
 
   drawDashboardStrengthLine(canvas, series);
 }
@@ -1865,60 +1881,142 @@ function drawDashboardStrengthLine(canvas, series) {
   context.clearRect(0, 0, canvas.width, canvas.height);
   context.scale(dpr, dpr);
 
-  const padding = { top: 20, right: 16, bottom: 30, left: 34 };
+  const padding = { top: 18, right: 18, bottom: 18, left: 46 };
   const chartWidth = cssWidth - padding.left - padding.right;
   const chartHeight = cssHeight - padding.top - padding.bottom;
+  const chartBottom = padding.top + chartHeight;
 
   const values = series.map((point) => point.value);
   const minValue = Math.min(...values);
   const maxValue = Math.max(...values);
-  const span = Math.max(maxValue - minValue, 1);
+  const valuePadding = Math.max(10, Math.round((maxValue - minValue || 20) * 0.18));
+  const chartMin = Math.max(0, Math.floor((minValue - valuePadding) / 20) * 20);
+  const chartMax = Math.ceil((maxValue + valuePadding) / 20) * 20;
+  const span = Math.max(chartMax - chartMin, 1);
+
+  const background = context.createLinearGradient(0, padding.top, 0, chartBottom);
+  background.addColorStop(0, "rgba(20, 22, 25, 0.98)");
+  background.addColorStop(1, "rgba(12, 14, 17, 0.98)");
+  context.fillStyle = background;
+  roundRect(context, 0, 0, cssWidth, cssHeight, 16);
+  context.fill();
 
   context.lineWidth = 1;
-  context.strokeStyle = "#d9d4ca";
+  context.strokeStyle = "rgba(255, 255, 255, 0.12)";
   context.font = "11px Manrope";
-  context.fillStyle = "#6f7a86";
+  context.fillStyle = "rgba(255, 255, 255, 0.42)";
 
   for (let i = 0; i <= 4; i += 1) {
+    const value = chartMax - (span / 4) * i;
     const y = padding.top + (chartHeight / 4) * i;
     context.beginPath();
     context.moveTo(padding.left, y);
     context.lineTo(cssWidth - padding.right, y);
     context.stroke();
+    context.textAlign = "left";
+    context.textBaseline = "middle";
+    context.fillText(Math.round(value).toLocaleString("en-US"), 8, y);
   }
 
   const points = series.map((point, index) => {
     const x =
       padding.left +
       (series.length === 1 ? chartWidth / 2 : (chartWidth / (series.length - 1)) * index);
-    const y = padding.top + chartHeight - ((point.value - minValue) / span) * chartHeight;
+    const y = padding.top + chartHeight - ((point.value - chartMin) / span) * chartHeight;
     return { x, y, value: point.value, label: point.label };
   });
 
-  context.strokeStyle = "#2f3a46";
-  context.lineWidth = 3;
-  context.beginPath();
-  points.forEach((point, index) => {
-    if (index === 0) {
-      context.moveTo(point.x, point.y);
-    } else {
-      context.lineTo(point.x, point.y);
-    }
-  });
-  context.stroke();
+  const stepPath = new Path2D();
+  stepPath.moveTo(points[0].x, points[0].y);
+  for (let index = 1; index < points.length; index += 1) {
+    stepPath.lineTo(points[index].x, points[index - 1].y);
+    stepPath.lineTo(points[index].x, points[index].y);
+  }
 
-  points.forEach((point, index) => {
-    context.fillStyle = "#202832";
+  const areaPath = new Path2D();
+  areaPath.moveTo(points[0].x, chartBottom);
+  areaPath.lineTo(points[0].x, points[0].y);
+  for (let index = 1; index < points.length; index += 1) {
+    areaPath.lineTo(points[index].x, points[index - 1].y);
+    areaPath.lineTo(points[index].x, points[index].y);
+  }
+  areaPath.lineTo(points[points.length - 1].x, chartBottom);
+  areaPath.closePath();
+
+  const fillGradient = context.createLinearGradient(0, padding.top, 0, chartBottom);
+  fillGradient.addColorStop(0, "rgba(255, 129, 55, 0.72)");
+  fillGradient.addColorStop(0.55, "rgba(255, 129, 55, 0.34)");
+  fillGradient.addColorStop(1, "rgba(255, 129, 55, 0.08)");
+  context.fillStyle = fillGradient;
+  context.fill(areaPath);
+
+  context.strokeStyle = "#ff8137";
+  context.lineWidth = 4;
+  context.lineJoin = "round";
+  context.lineCap = "round";
+  context.shadowColor = "rgba(255, 129, 55, 0.28)";
+  context.shadowBlur = 16;
+  context.stroke(stepPath);
+  context.shadowBlur = 0;
+
+  const highlightPoints = getChartHighlightPoints(points);
+  highlightPoints.forEach((point) => {
+    context.fillStyle = "#ff8137";
+    context.beginPath();
+    context.arc(point.x, point.y, 7, 0, Math.PI * 2);
+    context.fill();
+
+    context.fillStyle = "#17191d";
     context.beginPath();
     context.arc(point.x, point.y, 4.2, 0, Math.PI * 2);
     context.fill();
 
-    if (index % Math.ceil(points.length / 4) === 0 || index === points.length - 1) {
-      context.fillStyle = "#6f7a86";
-      context.textAlign = "center";
-      context.fillText(point.label, point.x, cssHeight - 8);
-    }
+    const label = Math.round(point.value).toLocaleString("en-US");
+    const metrics = context.measureText(label);
+    const labelWidth = Math.max(54, metrics.width + 18);
+    const labelHeight = 26;
+    const labelX = Math.min(cssWidth - padding.right - labelWidth, Math.max(padding.left, point.x - (labelWidth / 2)));
+    const labelY = Math.max(8, point.y - 40);
+
+    context.fillStyle = "#ff8137";
+    roundRect(context, labelX, labelY, labelWidth, labelHeight, 10);
+    context.fill();
+
+    context.fillStyle = "#ffffff";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.font = "700 11px Manrope";
+    context.fillText(label, labelX + (labelWidth / 2), labelY + (labelHeight / 2) + 0.5);
   });
+}
+
+function getChartHighlightPoints(points) {
+  if (!points.length) {
+    return [];
+  }
+
+  const localPeaks = points.filter((point, index) => {
+    const previous = points[index - 1]?.value ?? -Infinity;
+    const next = points[index + 1]?.value ?? -Infinity;
+    return point.value >= previous && point.value >= next;
+  });
+
+  return [...localPeaks, points[points.length - 1]]
+    .filter((point, index, array) => array.findIndex((item) => item.x === point.x) === index)
+    .sort((first, second) => second.value - first.value)
+    .slice(0, 2)
+    .sort((first, second) => first.x - second.x);
+}
+
+function roundRect(context, x, y, width, height, radius) {
+  const safeRadius = Math.min(radius, width / 2, height / 2);
+  context.beginPath();
+  context.moveTo(x + safeRadius, y);
+  context.arcTo(x + width, y, x + width, y + height, safeRadius);
+  context.arcTo(x + width, y + height, x, y + height, safeRadius);
+  context.arcTo(x, y + height, x, y, safeRadius);
+  context.arcTo(x, y, x + width, y, safeRadius);
+  context.closePath();
 }
 
 function renderDashboardRecords(workouts, exercisesByWorkout) {
@@ -2232,6 +2330,10 @@ function getFriendlyError(error) {
 
   if (code.includes("auth/user-not-found")) {
     return "Uzytkownik nie istnieje.";
+  }
+
+  if (code.includes("permission-denied")) {
+    return "Brak uprawnien do odczytu danych. Sprawdz reguly Firestore.";
   }
 
   if (error.message) {
