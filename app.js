@@ -225,18 +225,21 @@ async function initHomePage(user) {
   toggleLoading(true);
   hideMessages();
 
-  const [userProfile, workouts, allWorkoutsResult] = await Promise.all([
+  const [userProfile, workouts, allWorkoutsResult, allExercisesResult] = await Promise.all([
     getUserProfileSafe(user.uid),
     getUserWorkoutsSafe(user.uid),
     getAllWorkoutsSafe(),
+    getAllExercisesSafe(),
   ]);
   const workoutIds = workouts.map((workout) => workout.id);
   const exercisesByWorkout = await getExercisesByWorkoutIds(workoutIds);
+  const allExercisesByWorkout = indexExercisesByWorkout(allExercisesResult.exercises);
   const weeklyGoal = getWeeklyGoal(userProfile);
+  const rankingHasPermission = allWorkoutsResult.hasPermission && allExercisesResult.hasPermission;
 
   renderHomeHeader(user, userProfile);
   renderUserStatus(workouts, weeklyGoal);
-  await renderGlobalRanking(allWorkoutsResult.workouts, allWorkoutsResult.hasPermission, user.uid);
+  await renderGlobalRanking(allWorkoutsResult.workouts, allExercisesByWorkout, rankingHasPermission, user.uid);
 
   renderLastWorkout(workouts, exercisesByWorkout);
   renderWorkoutHistory(workouts, exercisesByWorkout);
@@ -289,6 +292,7 @@ function renderUserStatus(workouts, weeklyGoal) {
   const lastWorkoutDateEl = document.getElementById("lastWorkoutDate");
   const streakWeeksEl = document.getElementById("streakWeeks");
   const weeklyGoalValueEl = document.getElementById("weeklyGoalValue");
+  const weeklyGoalMetaEl = document.getElementById("weeklyGoalMeta");
   const weekProgressTextEl = document.getElementById("weekProgressText");
   const weekProgressBarEl = document.getElementById("weekProgressBar");
   const statusBadgeEl = document.getElementById("statusBadge");
@@ -299,6 +303,7 @@ function renderUserStatus(workouts, weeklyGoal) {
     !lastWorkoutDateEl ||
     !streakWeeksEl ||
     !weeklyGoalValueEl ||
+    !weeklyGoalMetaEl ||
     !weekProgressTextEl ||
     !weekProgressBarEl ||
     !statusBadgeEl ||
@@ -312,6 +317,7 @@ function renderUserStatus(workouts, weeklyGoal) {
   const progressPercent = Math.min((thisWeekCount / weeklyGoal) * 100, 100);
 
   weeklyGoalValueEl.textContent = String(weeklyGoal);
+  weeklyGoalMetaEl.textContent = `${formatTrainingCount(weeklyGoal)} tygodniowo`;
   weekProgressTextEl.textContent = `${thisWeekCount} / ${weeklyGoal}`;
   weekProgressBarEl.style.width = `${progressPercent}%`;
   streakWeeksEl.textContent = String(streak);
@@ -427,6 +433,7 @@ async function initDashboardPage(user) {
   const exercisesByWorkout = await getExercisesByWorkoutIds(workoutIds);
 
   renderDashboardStats(workouts, exercisesByWorkout);
+  renderDashboardPoints(workouts, exercisesByWorkout);
 
   toggleLoading(false);
 }
@@ -1507,6 +1514,112 @@ async function getAllWorkoutsSafe() {
   }
 }
 
+async function getAllExercisesSafe() {
+  try {
+    const snapshot = await getDocs(collection(db, "exercises"));
+    const exercises = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+    return { exercises, hasPermission: true };
+  } catch (error) {
+    if (String(error?.code || "").includes("permission-denied")) {
+      return { exercises: [], hasPermission: false };
+    }
+
+    throw error;
+  }
+}
+
+function indexExercisesByWorkout(exercises = []) {
+  return exercises.reduce((acc, exercise) => {
+    const workoutId = exercise?.workoutId;
+    if (!workoutId) {
+      return acc;
+    }
+
+    if (!acc[workoutId]) {
+      acc[workoutId] = [];
+    }
+
+    acc[workoutId].push(exercise);
+    return acc;
+  }, {});
+}
+
+function normalizeExerciseName(name) {
+  return String(name || "").trim().toLowerCase();
+}
+
+function calculatePointsByUser(workouts = [], exercisesByWorkout = {}, recentCutoffDate = null) {
+  const workoutsByUser = new Map();
+
+  workouts.forEach((workout) => {
+    if (!workout?.userId || !workout?.date) {
+      return;
+    }
+
+    if (!workoutsByUser.has(workout.userId)) {
+      workoutsByUser.set(workout.userId, []);
+    }
+
+    workoutsByUser.get(workout.userId).push(workout);
+  });
+
+  const pointsByUser = new Map();
+
+  workoutsByUser.forEach((userWorkouts, userId) => {
+    const sorted = userWorkouts
+      .slice()
+      .sort((first, second) => new Date(first.date) - new Date(second.date));
+    const pbMaxByExercise = new Map();
+
+    let total = 0;
+    let recent = 0;
+    let pbHits = 0;
+
+    sorted.forEach((workout) => {
+      let workoutPoints = 100;
+      const exercises = exercisesByWorkout[workout.id] || [];
+
+      exercises.forEach((exercise) => {
+        const normalizedName = normalizeExerciseName(exercise.name);
+        if (!normalizedName) {
+          return;
+        }
+
+        const weight = Number(exercise.weight);
+        if (!Number.isFinite(weight)) {
+          return;
+        }
+
+        const previousMax = pbMaxByExercise.get(normalizedName);
+        if (previousMax === undefined || weight > previousMax) {
+          workoutPoints += 50;
+          pbHits += 1;
+          pbMaxByExercise.set(normalizedName, weight);
+        }
+      });
+
+      total += workoutPoints;
+
+      if (recentCutoffDate) {
+        const workoutDate = new Date(workout.date);
+        workoutDate.setHours(0, 0, 0, 0);
+        if (!Number.isNaN(workoutDate.getTime()) && workoutDate >= recentCutoffDate) {
+          recent += workoutPoints;
+        }
+      }
+    });
+
+    pointsByUser.set(userId, {
+      total,
+      recent,
+      pbHits,
+      workoutsCount: sorted.length,
+    });
+  });
+
+  return pointsByUser;
+}
+
 async function getExercisesByWorkoutIds(workoutIds) {
   if (!workoutIds.length) {
     return {};
@@ -1596,6 +1709,7 @@ function renderWorkoutHistory(workouts, exercisesByWorkout) {
 
     return `
       <li class="history-entry">
+        <strong class="history-date">${formatDate(workout.date)}</strong>
         <strong class="history-title">${title}</strong>
       </li>
     `;
@@ -1617,7 +1731,7 @@ function renderWorkoutHistory(workouts, exercisesByWorkout) {
   }
 }
 
-async function renderGlobalRanking(workouts, hasPermission = true, currentUserId = "") {
+async function renderGlobalRanking(workouts, exercisesByWorkout, hasPermission = true, currentUserId = "") {
   const rankingSummaryEl = document.getElementById("rankingSummary");
   const rankingEmptyEl = document.getElementById("rankingEmpty");
   const rankingListEl = document.getElementById("rankingList");
@@ -1627,8 +1741,8 @@ async function renderGlobalRanking(workouts, hasPermission = true, currentUserId
   }
 
   if (!hasPermission) {
-    rankingSummaryEl.textContent = "Brak uprawnien do globalnego rankingu. Zaktualizuj reguly Firestore.";
-    rankingEmptyEl.textContent = "Ranking jest ukryty do czasu wlaczenia odczytu workouts dla zalogowanych uzytkownikow.";
+    rankingSummaryEl.textContent = "Brak uprawnien do globalnego rankingu punktowego. Zaktualizuj reguly Firestore.";
+    rankingEmptyEl.textContent = "Ranking jest ukryty do czasu wlaczenia odczytu workouts i exercises dla zalogowanych uzytkownikow.";
     rankingEmptyEl.classList.remove("hidden");
     rankingListEl.innerHTML = "<li>Brak danych rankingu.</li>";
     return;
@@ -1653,9 +1767,15 @@ async function renderGlobalRanking(workouts, hasPermission = true, currentUserId
     countsByUser.set(workout.userId, (countsByUser.get(workout.userId) || 0) + 1);
   });
 
+  const pointsByUser = calculatePointsByUser(workouts, exercisesByWorkout, cutoff);
+
   const ranking = [...countsByUser.entries()]
-    .map(([userId, total]) => ({ userId, total }))
-    .sort((a, b) => b.total - a.total)
+    .map(([userId, workoutsInRange]) => ({
+      userId,
+      workoutsInRange,
+      points: pointsByUser.get(userId)?.recent || workoutsInRange * 100,
+    }))
+    .sort((a, b) => b.points - a.points)
     .slice(0, 8);
 
   const profiles = await Promise.all(
@@ -1667,7 +1787,8 @@ async function renderGlobalRanking(workouts, hasPermission = true, currentUserId
   const profileById = new Map(profiles.map((entry) => [entry.userId, entry.profile]));
 
   const totalWorkouts = recentWorkouts.length;
-  rankingSummaryEl.textContent = `${ranking.length} aktywnych osob, ${totalWorkouts} treningow lacznie w 7 dni`;
+  const totalPoints = ranking.reduce((sum, entry) => sum + entry.points, 0);
+  rankingSummaryEl.textContent = `${ranking.length} aktywnych osob, ${totalWorkouts} treningow, ${totalPoints} pkt w 7 dni`;
 
   if (!ranking.length) {
     rankingEmptyEl.classList.remove("hidden");
@@ -1676,7 +1797,7 @@ async function renderGlobalRanking(workouts, hasPermission = true, currentUserId
   }
 
   rankingEmptyEl.classList.add("hidden");
-  const bestValue = ranking[0].total || 1;
+  const bestValue = ranking[0].points || 1;
 
   rankingListEl.innerHTML = ranking
     .map((entry, index) => {
@@ -1688,7 +1809,7 @@ async function renderGlobalRanking(workouts, hasPermission = true, currentUserId
         ? "Ty"
         : profile?.name || `Uzytkownik ${entry.userId.slice(0, 4).toUpperCase()}`;
       const avatar = profile?.photoURL || "";
-      const ratio = Math.max(12, (entry.total / bestValue) * 100);
+      const ratio = Math.max(12, (entry.points / bestValue) * 100);
 
       return `
         <li class="ranking-item${isCurrentUser ? " ranking-item-me" : ""}">
@@ -1699,8 +1820,9 @@ async function renderGlobalRanking(workouts, hasPermission = true, currentUserId
                 ? `<img src="${escapeHtml(avatar)}" alt="Avatar" class="ranking-avatar" />`
                 : `<span class="ranking-avatar ranking-avatar-fallback">${getInitial(label)}</span>`}
               <span class="ranking-user">${escapeHtml(label)}</span>
+              <span class="ranking-user-points">${entry.points} pkt</span>
             </span>
-            <span class="ranking-score">${entry.total}</span>
+            <span class="ranking-score">${entry.workoutsInRange}</span>
           </div>
           <div class="ranking-track">
             <div class="ranking-fill" style="width: ${ratio}%"></div>
@@ -1709,6 +1831,26 @@ async function renderGlobalRanking(workouts, hasPermission = true, currentUserId
       `;
     })
     .join("");
+}
+
+function renderDashboardPoints(workouts, exercisesByWorkout) {
+  const totalEl = document.getElementById("dashboardPointsTotal");
+  const workoutsEl = document.getElementById("dashboardPointsWorkouts");
+  const pbEl = document.getElementById("dashboardPointsPB");
+
+  if (!totalEl || !workoutsEl || !pbEl) {
+    return;
+  }
+
+  const points = calculatePointsByUser(
+    workouts.map((workout) => ({ ...workout, userId: "current-user" })),
+    exercisesByWorkout,
+    null
+  ).get("current-user") || { total: 0, pbHits: 0, workoutsCount: 0 };
+
+  totalEl.textContent = `${points.total} pkt`;
+  workoutsEl.textContent = `${points.workoutsCount} x 100 pkt`;
+  pbEl.textContent = `${points.pbHits} x 50 pkt`;
 }
 
 function renderPB(workouts, exercisesByWorkout) {
@@ -2255,6 +2397,22 @@ function getInitial(value) {
   }
 
   return normalized[0].toUpperCase();
+}
+
+function formatTrainingCount(value) {
+  const count = Math.max(0, Number(value) || 0);
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+
+  if (count === 1) {
+    return `${count} trening`;
+  }
+
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+    return `${count} treningi`;
+  }
+
+  return `${count} treningow`;
 }
 
 function escapeHtml(value) {
