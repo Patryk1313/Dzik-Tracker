@@ -12,10 +12,10 @@
   --ink-faint: #7c7c7c;
   --chip: #1d1d1f;
   --chip-hover: #0f0f10;
-  --pink: #e7c0eb;
-  --pink-strong: #dcaee2;
-  --blue: #d8e5fb;
-  --blue-strong: #cadcf8;
+  --pink: #ff8137;
+  --pink-strong: #f06f24;
+  --blue: #246cd1;
+  --blue-strong: #1c5bb4;
   --lilac: #efe4ff;
   --sand: #f4eee3;
   --border: rgba(20, 20, 20, 0.08);
@@ -121,8 +121,15 @@ a {
   width: 34px;
   min-width: 34px;
   padding: 0;
-  background: var(--pink);
+  background: #ffffff;
   color: var(--ink);
+}
+
+.brand-mark img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  display: block;
 }
 
 .brand-name {
@@ -337,15 +344,15 @@ a {
 }
 
 .widget-blue {
-  background: #dce7fa;
+  background: color-mix(in srgb, var(--blue) 20%, white);
 }
 
 .widget-blue-soft {
-  background: #d5e0f4;
+  background: color-mix(in srgb, var(--blue) 14%, white);
 }
 
 .widget-pink {
-  background: #ecd0ea;
+  background: color-mix(in srgb, var(--pink) 22%, white);
 }
 
 .widget-dark,
@@ -1161,11 +1168,11 @@ textarea {
 }
 
 .auth-preview-light {
-  background: #f0caeb;
+  background: color-mix(in srgb, var(--pink) 24%, white);
 }
 
 .auth-preview-soft {
-  background: #d4e3fb;
+  background: color-mix(in srgb, var(--blue) 18%, white);
 }
 
 .auth-preview-label {
@@ -1211,6 +1218,13 @@ textarea {
 .auth-card-brand {
   background: var(--chip);
   color: #fff;
+}
+
+.auth-card-brand img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  display: block;
 }
 
 .auth-title {
@@ -1284,17 +1298,58 @@ textarea {
 }
 
 @media (max-width: 1120px) {
+  .topbar {
+    padding: 14px 14px 0;
+  }
+
+  .topbar-inner {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: nowrap;
+  }
+
+  .brand-cluster,
+  .user-actions {
+    width: auto;
+  }
+
   .nav-links {
-    order: 3;
-    width: 100%;
-    justify-content: center;
-    flex-wrap: wrap;
+    order: initial;
+    width: auto;
+    min-width: 0;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .nav-links::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav-links a {
+    white-space: nowrap;
   }
 
   .user-actions {
     margin-left: 0;
-    width: 100%;
     justify-content: flex-end;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
+  .topbar .btn,
+  .topbar .btn-ghost {
+    width: auto;
+    min-height: 36px;
+    padding: 0 12px;
+    font-size: 0.74rem;
+  }
+
+  .app-board {
+    margin-top: 18px;
   }
 
   .home-header,
@@ -1397,6 +1452,7 @@ textarea {
   }
 
   .app-board {
+    margin-top: 20px;
     padding: 12px;
     min-height: auto;
     padding-bottom: 98px;
@@ -1626,6 +1682,7 @@ textarea {
   }
 
   .app-board {
+    margin-top: 22px;
     padding: 9px;
     border-radius: 24px;
     padding-bottom: 92px;
