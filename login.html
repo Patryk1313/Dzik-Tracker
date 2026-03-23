@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gym Tracker - Logowanie</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body data-page="login">
+    <main class="auth-shell">
+      <section class="auth-layout">
+        <aside class="auth-showcase">
+          <div class="auth-showcase-inner">
+            <p class="auth-badge">Dashboard</p>
+            <h1 class="auth-showcase-title">Track your training in a clean tablet-style command center.</h1>
+            <p class="auth-showcase-copy">
+              Codzienny podglad treningow, tygodniowych celow i aktywnosci spolecznosci w nowoczesnym panelu.
+            </p>
+
+            <div class="auth-preview-stack">
+              <article class="auth-preview-card auth-preview-dark">
+                <span class="auth-preview-label">Weekly streak</span>
+                <strong class="auth-preview-value">4 tygodnie</strong>
+                <span class="auth-preview-copy">Trzymasz tempo i zamykasz cel co tydzien.</span>
+              </article>
+
+              <article class="auth-preview-card auth-preview-light">
+                <span class="auth-preview-label">This week</span>
+                <strong class="auth-preview-value">2 / 3 treningi</strong>
+                <span class="auth-preview-copy">Jeszcze jedna sesja i domykasz plan.</span>
+              </article>
+
+              <article class="auth-preview-card auth-preview-soft">
+                <span class="auth-preview-label">Ranking</span>
+                <strong class="auth-preview-value">Top 5 this week</strong>
+                <span class="auth-preview-copy">Widok globalnej aktywnosci i rytmu treningowego.</span>
+              </article>
+            </div>
+          </div>
+        </aside>
+
+        <section class="auth-card">
+          <div class="auth-card-header">
+            <span class="auth-card-brand">Gym</span>
+            <span class="auth-card-tag">Welcome back</span>
+          </div>
+
+          <h2 class="auth-title">Zaloguj sie do swojego panelu</h2>
+          <p class="auth-meta">Loguj treningi, sledz progres i wracaj do planu bez chaosu.</p>
+
+          <div id="authError" class="error-box hidden"></div>
+          <div id="authLoading" class="loading-box hidden">Przetwarzanie...</div>
+
+          <form id="authForm" class="form auth-form" autocomplete="on">
+            <div id="nameGroup" class="form-row hidden">
+              <label for="name">Imie</label>
+              <input id="name" name="name" type="text" placeholder="Twoje imie" />
+            </div>
+
+            <div class="form-row">
+              <label for="email">Email</label>
+              <input id="email" name="email" type="email" placeholder="twoj@email.com" required />
+            </div>
+
+            <div class="form-row">
+              <label for="password">Haslo</label>
+              <input id="password" name="password" type="password" minlength="6" required />
+            </div>
+
+            <button id="authSubmit" class="btn btn-primary auth-submit" type="submit">Zaloguj sie</button>
+          </form>
+
+          <p class="auth-switch">
+            <span id="authSwitchText">Nie masz konta?</span>
+            <button id="authToggle" type="button">Zarejestruj sie</button>
+          </p>
+        </section>
+      </section>
+    </main>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

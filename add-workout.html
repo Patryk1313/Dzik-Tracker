@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gym Tracker - Dodaj trening</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body data-page="add-workout">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand-cluster">
+          <a class="brand brand-mark" href="index.html">G</a>
+          <a class="brand brand-name" href="index.html">Builder</a>
+        </div>
+
+        <nav class="nav-links">
+          <a href="index.html" data-nav="home">Home</a>
+          <a href="dashboard.html" data-nav="dashboard">Dashboard</a>
+          <a href="workouts.html" data-nav="workouts">Treningi</a>
+          <a href="profile.html" data-nav="profile">Profil</a>
+        </nav>
+
+        <div class="user-actions">
+          <span class="topbar-dot"></span>
+          <img id="navUserPhoto" class="nav-user-photo hidden" alt="Avatar" />
+          <span class="nav-user" id="navUser"></span>
+          <button id="logoutBtn" class="btn btn-ghost" type="button">Wyloguj</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container app-board">
+      <section class="card hero-card">
+        <p class="section-kicker">Workout builder</p>
+        <h1 class="page-title">Dodaj trening</h1>
+        <p class="text-muted">Buduj sesje i template'y w tym samym panelu roboczym.</p>
+      </section>
+
+      <div id="pageError" class="error-box hidden"></div>
+      <div id="pageSuccess" class="success-box hidden"></div>
+      <div id="pageLoading" class="loading-box hidden">Zapisywanie...</div>
+
+      <section class="card widget-neutral">
+        <form id="workoutForm" class="form">
+          <div class="form-row">
+            <label for="workoutTemplate">Wybierz template</label>
+            <select id="workoutTemplate" name="workoutTemplate">
+              <option value="">-- Brak template (pusta lista) --</option>
+            </select>
+          </div>
+
+          <div class="grid grid-2">
+            <div class="form-row">
+              <label for="workoutDate">Data treningu</label>
+              <input id="workoutDate" name="workoutDate" type="date" required />
+            </div>
+
+            <div class="form-row">
+              <label for="workoutNotes">Notatki</label>
+              <input id="workoutNotes" name="workoutNotes" type="text" placeholder="Np. Dobry trening push" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <label>Cwiczenia</label>
+            <p id="templateHint" class="text-muted" style="margin: 0">Wybierz template lub dodaj wlasne cwiczenie.</p>
+            <div id="exercisesContainer" class="grid"></div>
+          </div>
+
+          <div class="grid grid-2">
+            <button id="addExerciseBtn" class="btn btn-ghost" type="button">+ Dodaj cwiczenie</button>
+            <button class="btn btn-primary" type="submit">Zapisz trening</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card widget-pink" style="margin-top: 18px">
+        <div class="section-header">
+          <div>
+            <p class="section-kicker">Wlasny template</p>
+            <h2 class="section-title">Stworz swoj zestaw cwiczen</h2>
+          </div>
+        </div>
+
+        <p id="templateBuilderState" class="text-muted" style="margin-top: 0">Tworzysz nowy template.</p>
+
+        <form id="templateBuilderForm" class="form">
+          <div class="form-row">
+            <label for="templateName">Nazwa template</label>
+            <input id="templateName" name="templateName" type="text" placeholder="Np. Upper A" required />
+          </div>
+
+          <div class="form-row">
+            <label>Cwiczenia template</label>
+            <div id="templateExercisesContainer" class="grid"></div>
+          </div>
+
+          <div class="grid grid-2">
+            <button id="addTemplateExerciseBtn" class="btn btn-ghost" type="button">+ Dodaj cwiczenie do template</button>
+            <div class="grid grid-2">
+              <button id="cancelTemplateEditBtn" class="btn btn-ghost hidden" type="button">Anuluj edycje</button>
+              <button id="saveTemplateBtn" class="btn btn-primary" type="submit">Zapisz template</button>
+            </div>
+          </div>
+        </form>
+
+        <div style="margin-top: 18px">
+          <p class="section-kicker" style="margin-bottom: 10px">Twoje zapisane template</p>
+          <ul id="savedTemplatesList" class="list">
+            <li>Brak wlasnych template.</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <nav class="mobile-bottom-nav" aria-label="Nawigacja mobilna">
+      <a href="index.html" data-nav="home" class="mobile-bottom-link" aria-label="Home">
+        <img src="logo/black_logo.png" alt="" class="mobile-bottom-icon mobile-bottom-logo" />
+      </a>
+      <a href="dashboard.html" data-nav="dashboard" class="mobile-bottom-link" aria-label="Dashboard">
+        <svg class="mobile-bottom-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="4" y="12" width="3.5" height="8" rx="1.5"></rect>
+          <rect x="10.25" y="8" width="3.5" height="12" rx="1.5"></rect>
+          <rect x="16.5" y="4" width="3.5" height="16" rx="1.5"></rect>
+        </svg>
+      </a>
+      <a href="workouts.html" data-nav="workouts" class="mobile-bottom-link" aria-label="Treningi">
+        <svg class="mobile-bottom-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 10h3v4H3z"></path>
+          <path d="M18 10h3v4h-3z"></path>
+          <path d="M6 9h2v6H6z"></path>
+          <path d="M16 9h2v6h-2z"></path>
+          <path d="M8 11h8v2H8z"></path>
+        </svg>
+      </a>
+      <a href="profile.html" data-nav="profile" class="mobile-bottom-link" aria-label="Profil">
+        <svg class="mobile-bottom-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="8" r="3.5"></circle>
+          <path d="M5 19c1.8-3 4.1-4.5 7-4.5S17.2 16 19 19"></path>
+        </svg>
+      </a>
+    </nav>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

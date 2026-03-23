@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gym Tracker - Edycja profilu</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body data-page="profile-edit">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand-cluster">
+          <a class="brand brand-mark" href="index.html">G</a>
+          <a class="brand brand-name" href="index.html">Profile</a>
+        </div>
+
+        <nav class="nav-links">
+          <a href="index.html" data-nav="home">Home</a>
+          <a href="dashboard.html" data-nav="dashboard">Dashboard</a>
+          <a href="workouts.html" data-nav="workouts">Treningi</a>
+          <a href="profile.html" data-nav="profile">Profil</a>
+        </nav>
+
+        <div class="user-actions">
+          <span class="topbar-dot"></span>
+          <img id="navUserPhoto" class="nav-user-photo hidden" alt="Avatar" />
+          <span class="nav-user" id="navUser"></span>
+          <button id="logoutBtn" class="btn btn-ghost" type="button">Wyloguj</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container app-board">
+      <section class="card hero-card">
+        <p class="section-kicker">Personal panel</p>
+        <h1 class="page-title">Edycja profilu</h1>
+        <p class="text-muted">Zmieniaj imie, date urodzenia i zdjecie profilowe.</p>
+      </section>
+
+      <div id="pageError" class="error-box hidden"></div>
+      <div id="pageSuccess" class="success-box hidden"></div>
+      <div id="pageLoading" class="loading-box hidden">Zapisywanie zmian...</div>
+
+      <section class="grid grid-2">
+        <article class="card widget-neutral">
+          <div class="section-header">
+            <div>
+              <p class="section-kicker">Podglad</p>
+              <h2 class="section-title">Aktualne dane</h2>
+            </div>
+            <a href="profile.html" class="btn btn-ghost">Wroc do profilu</a>
+          </div>
+
+          <div class="profile-hero">
+            <img id="currentProfilePhoto" class="profile-photo hidden" alt="Zdjecie profilowe" />
+            <div id="currentProfileFallback" class="profile-avatar-fallback">P</div>
+            <div class="profile-hero-meta">
+              <strong id="currentProfileName">-</strong>
+              <span id="currentProfileBirthDate" class="text-muted">-</span>
+            </div>
+          </div>
+
+          <form id="profileEditForm" class="form" novalidate>
+            <div class="form-row">
+              <label for="editProfileName">Imie</label>
+              <input id="editProfileName" name="editProfileName" type="text" maxlength="40" required />
+            </div>
+
+            <div class="form-row">
+              <label for="editProfileBirthDate">Data urodzenia</label>
+              <input id="editProfileBirthDate" name="editProfileBirthDate" type="date" />
+            </div>
+
+            <div class="form-row">
+              <label for="editProfilePhoto">Nowe zdjecie profilowe</label>
+              <input id="editProfilePhoto" name="editProfilePhoto" type="file" accept="image/*" />
+              <img id="editProfilePhotoPreview" class="profile-photo-preview hidden" alt="Podglad nowego zdjecia" />
+              <p class="text-muted" style="margin: 0">Format: JPG/PNG/WebP, maks. 4 MB.</p>
+            </div>
+
+            <div class="grid grid-2">
+              <button id="removeProfilePhotoBtn" class="btn btn-ghost" type="button">Usun zdjecie profilowe</button>
+              <button class="btn btn-primary" type="submit">Zapisz zmiany</button>
+            </div>
+          </form>
+        </article>
+      </section>
+    </main>
+
+    <nav class="mobile-bottom-nav" aria-label="Nawigacja mobilna">
+      <a href="index.html" data-nav="home" class="mobile-bottom-link" aria-label="Home">
+        <img src="logo/black_logo.png" alt="" class="mobile-bottom-icon mobile-bottom-logo" />
+      </a>
+      <a href="dashboard.html" data-nav="dashboard" class="mobile-bottom-link" aria-label="Dashboard">
+        <svg class="mobile-bottom-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="4" y="12" width="3.5" height="8" rx="1.5"></rect>
+          <rect x="10.25" y="8" width="3.5" height="12" rx="1.5"></rect>
+          <rect x="16.5" y="4" width="3.5" height="16" rx="1.5"></rect>
+        </svg>
+      </a>
+      <a href="workouts.html" data-nav="workouts" class="mobile-bottom-link" aria-label="Treningi">
+        <svg class="mobile-bottom-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 10h3v4H3z"></path>
+          <path d="M18 10h3v4h-3z"></path>
+          <path d="M6 9h2v6H6z"></path>
+          <path d="M16 9h2v6h-2z"></path>
+          <path d="M8 11h8v2H8z"></path>
+        </svg>
+      </a>
+      <a href="profile.html" data-nav="profile" class="mobile-bottom-link" aria-label="Profil">
+        <svg class="mobile-bottom-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="8" r="3.5"></circle>
+          <path d="M5 19c1.8-3 4.1-4.5 7-4.5S17.2 16 19 19"></path>
+        </svg>
+      </a>
+    </nav>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
