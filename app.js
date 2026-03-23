@@ -687,6 +687,9 @@ async function initAddWorkoutPage(user) {
       return;
     }
 
+    const hasDefaultWeight = Number.isFinite(Number(data.defaultWeight));
+    const templateWeightValue = hasDefaultWeight ? String(Number(data.defaultWeight)) : "";
+
     const row = document.createElement("div");
     row.className = "exercise-item";
     row.innerHTML = `
@@ -701,7 +704,7 @@ async function initAddWorkoutPage(user) {
         </div>
         <div class="form-row">
           <label>Domyslny ciezar (kg)</label>
-          <input type="number" class="template-exercise-weight" min="0" step="0.5" value="${Number(data.defaultWeight || 0)}" required />
+          <input type="number" class="template-exercise-weight" min="0" step="0.5" value="${templateWeightValue}" required />
         </div>
       </div>
     `;
@@ -921,6 +924,9 @@ function openTemplateEditor(templateId, templateExercisesContainer, templateBuil
 }
 
 function addTemplateExerciseRowForEditor(container, data = {}) {
+  const hasDefaultWeight = Number.isFinite(Number(data.defaultWeight));
+  const templateWeightValue = hasDefaultWeight ? String(Number(data.defaultWeight)) : "";
+
   const row = document.createElement("div");
   row.className = "exercise-item";
   row.innerHTML = `
@@ -935,7 +941,7 @@ function addTemplateExerciseRowForEditor(container, data = {}) {
       </div>
       <div class="form-row">
         <label>Domyslny ciezar (kg)</label>
-        <input type="number" class="template-exercise-weight" min="0" step="0.5" value="${Number(data.defaultWeight || 0)}" required />
+        <input type="number" class="template-exercise-weight" min="0" step="0.5" value="${templateWeightValue}" required />
       </div>
     </div>
   `;
@@ -1002,16 +1008,19 @@ async function initProfilePage(user) {
 
   const profileName = document.getElementById("profileName");
   const profileBirthDate = document.getElementById("profileBirthDate");
+  const profileWeeklyGoal = document.getElementById("profileWeeklyGoal");
   const profileEmail = document.getElementById("profileEmail");
   const profileCreated = document.getElementById("profileCreated");
   const profilePhoto = document.getElementById("profilePhoto");
   const profileAvatarFallback = document.getElementById("profileAvatarFallback");
   const profileDisplayName = document.getElementById("profileDisplayName");
   const profileDisplayEmail = document.getElementById("profileDisplayEmail");
+  const profileDisplayWeeklyGoal = document.getElementById("profileDisplayWeeklyGoal");
 
   const nameValue = profileData.name || "-";
   const emailValue = profileData.email || user.email || "-";
   const createdValue = formatTimestamp(profileData.createdAt) || "-";
+  const weeklyGoalValue = getWeeklyGoal(profileData);
   const birthDateValue = profileData.birthDate
     ? formatDate(profileData.birthDate)
     : Number.isFinite(Number(profileData.birthYear))
@@ -1021,10 +1030,12 @@ async function initProfilePage(user) {
 
   profileName.textContent = nameValue;
   profileBirthDate.textContent = birthDateValue;
+  profileWeeklyGoal.textContent = `${formatTrainingCount(weeklyGoalValue)} tygodniowo`;
   profileEmail.textContent = emailValue;
   profileCreated.textContent = createdValue;
   profileDisplayName.textContent = nameValue;
   profileDisplayEmail.textContent = emailValue;
+  profileDisplayWeeklyGoal.textContent = `Cel: ${formatTrainingCount(weeklyGoalValue)} tygodniowo`;
   profileAvatarFallback.textContent = getInitial(nameValue || emailValue);
 
   if (photoUrl) {
