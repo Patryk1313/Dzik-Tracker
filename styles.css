@@ -1041,6 +1041,63 @@ a {
   font-weight: 800;
 }
 
+.section-kicker-with-help {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  z-index: 4;
+}
+
+.dashboard-points-card {
+  overflow: visible;
+}
+
+.points-help {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 900;
+  background: rgba(26, 34, 48, 0.14);
+  color: #1a2230;
+  cursor: help;
+  position: relative;
+  z-index: 6;
+  user-select: none;
+}
+
+.points-help::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  transform: translateX(-50%) translateY(4px);
+  width: max-content;
+  max-width: 220px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #1a2230;
+  color: #ffffff;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  text-align: left;
+  box-shadow: 0 10px 22px rgba(10, 18, 34, 0.28);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+  z-index: 20;
+}
+
+.points-help:hover::after,
+.points-help:focus-visible::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 .overview-value,
 .stat-value {
   font-family: "Sora", sans-serif;
@@ -1094,6 +1151,7 @@ a {
 .range-toggle {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 4px;
   padding: 4px;
   border-radius: 999px;
@@ -1103,6 +1161,7 @@ a {
 
 .range-btn {
   min-width: 34px;
+  padding: 0 10px;
   height: 30px;
   border: none;
   border-radius: 999px;
@@ -1111,6 +1170,7 @@ a {
   font: inherit;
   font-size: 0.7rem;
   font-weight: 800;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -1616,6 +1676,12 @@ body[data-page="home"] .status-grid .status-tile:nth-child(2) {
 
 body[data-page="home"] .status-grid .status-tile:nth-child(3) {
   background: #f6f7fb;
+}
+
+body[data-page="home"] .status-grid .status-tile:nth-child(3) .status-label,
+body[data-page="home"] .status-grid .status-tile:nth-child(3) .status-value,
+body[data-page="home"] .status-grid .status-tile:nth-child(3) .status-meta {
+  color: #1a2230;
 }
 
 body[data-page="home"] .status-grid .status-tile:nth-child(4) {

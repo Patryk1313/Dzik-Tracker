@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dzik - Dashboard</title>
+    <title>Dzik - Panel</title>
     <link rel="icon" type="image/png" href="../logo/black_logo.png" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
@@ -11,20 +11,20 @@
     <header class="topbar">
       <div class="topbar-inner">
         <div class="brand-cluster">
-          <a class="brand brand-mark" href="../home/" aria-label="Dzik home"><img src="../logo/black_logo.png" alt="Dzik" /></a>
+          <a class="brand brand-mark" href="../home/" aria-label="Dzik strona główna"><img src="../logo/black_logo.png" alt="Dzik" /></a>
           <a class="brand brand-name" href="../home/">Dzik</a>
         </div>
 
         <nav class="nav-links">
-          <a href="../home/" data-nav="home">Home</a>
-          <a href="../dashboard/" data-nav="dashboard">Dashboard</a>
+          <a href="../home/" data-nav="home">Główna</a>
+          <a href="../dashboard/" data-nav="dashboard">Panel</a>
           <a href="../workouts/" data-nav="workouts">Treningi</a>
           <a href="../profile/" data-nav="profile">Profil</a>
         </nav>
 
         <div class="user-actions">
           <span class="topbar-dot"></span>
-          <img id="navUserPhoto" class="nav-user-photo hidden" alt="Avatar" />
+          <img id="navUserPhoto" class="nav-user-photo hidden" alt="Awatar" />
           <span class="nav-user" id="navUser"></span>
           <button id="logoutBtn" class="btn btn-ghost" type="button">Wyloguj</button>
         </div>
@@ -34,23 +34,23 @@
     <main class="container app-board">
       <section class="card dashboard-hero hero-card hero-card-wide">
         <div>
-          <p class="section-kicker">Dashboard</p>
-          <h1 class="page-title">Dashboard postepow</h1>
-          <p class="text-muted">Kompaktowy widok: sila, regularnosc, rekordy i aktywnosc.</p>
+          <p class="section-kicker">Panel</p>
+          <h1 class="page-title">Panel postępów</h1>
+          <p class="text-muted">Kompaktowy widok: siła, regularność, rekordy i aktywność.</p>
         </div>
       </section>
 
       <div id="pageError" class="error-box hidden"></div>
-      <div id="pageLoading" class="loading-box hidden">Ladowanie danych...</div>
+      <div id="pageLoading" class="loading-box hidden">Ładowanie danych...</div>
 
       <section class="dashboard-stack">
         <article class="card dashboard-section widget-neutral">
           <div class="section-header">
             <div>
-              <p class="section-kicker">Overview</p>
+              <p class="section-kicker">Podsumowanie</p>
               <h2 class="section-title">Szybkie statystyki</h2>
             </div>
-            <span class="pill">Live</span>
+            <span class="pill">Na żywo</span>
           </div>
 
           <div class="overview-grid">
@@ -70,49 +70,44 @@
             </div>
 
             <div class="overview-tile">
-              <span class="overview-label">Laczna liczba cwiczen</span>
+              <span class="overview-label">Łączna liczba ćwiczeń</span>
               <strong id="overviewExerciseCount" class="overview-value">0</strong>
             </div>
           </div>
         </article>
 
-        <article class="card dashboard-section widget-pink">
+        <article class="card dashboard-section widget-pink dashboard-points-card">
           <div class="section-header">
             <div>
-              <p class="section-kicker">Dziko Punkty</p>
-              <h2 class="section-title">Twoja punktacja</h2>
+              <p class="section-kicker section-kicker-with-help">
+                Dziko Punkty
+                <span
+                  class="points-help"
+                  tabindex="0"
+                  role="button"
+                  aria-label="Informacja o punktacji"
+                  data-tooltip="+100 pkt za każdy trening. +50 pkt za każde nowe PB. +250 pkt za 1. miejsce na koniec tygodnia."
+                  >?</span
+                >
+              </p>
             </div>
-            <span class="pill">Score</span>
+            <span class="pill">Wynik</span>
           </div>
 
-          <div class="overview-grid">
-            <div class="overview-tile">
-              <span class="overview-label">Lacznie</span>
-              <strong id="dashboardPointsTotal" class="overview-value">0 pkt</strong>
-            </div>
-            <div class="overview-tile">
-              <span class="overview-label">Za treningi</span>
-              <strong id="dashboardPointsWorkouts" class="overview-value">0 x 100 pkt</strong>
-            </div>
-            <div class="overview-tile">
-              <span class="overview-label">Za nowe PB</span>
-              <strong id="dashboardPointsPB" class="overview-value">0 x 50 pkt</strong>
-            </div>
-          </div>
-
-          <p class="text-muted" style="margin: 10px 0 0">Zasady: +100 pkt za kazdy trening, +50 pkt za kazde nowe PB.</p>
+          <strong id="dashboardPointsTotal" class="overview-value">0 pkt</strong>
         </article>
 
         <article class="card dashboard-section dashboard-strength-card">
           <div class="section-header">
             <div>
-              <p class="section-kicker">Progres silowy</p>
-              <h2 class="section-title">Wykres postepu (ostatnie treningi)</h2>
+              <p class="section-kicker">Progres siłowy</p>
+              <h2 class="section-title">Wykres postępu (ostatnie treningi)</h2>
             </div>
-            <div class="range-toggle" id="strengthRangeToggle" aria-label="Zakres wykresu silowego">
-              <button class="range-btn" data-strength-range="4" type="button">4</button>
-              <button class="range-btn" data-strength-range="8" type="button">8</button>
-              <button class="range-btn active" data-strength-range="12" type="button">12</button>
+            <div class="range-toggle" id="strengthRangeToggle" aria-label="Zakres wykresu siłowego">
+              <button class="range-btn" data-strength-range="7" type="button">1 tydzień</button>
+              <button class="range-btn active" data-strength-range="30" type="button">1 miesiąc</button>
+              <button class="range-btn" data-strength-range="183" type="button">6 miesięcy</button>
+              <button class="range-btn" data-strength-range="365" type="button">1 rok</button>
             </div>
           </div>
 
@@ -129,21 +124,21 @@
                 <p class="section-kicker">Rekordy</p>
                 <h2 class="section-title">Najlepsze wyniki</h2>
               </div>
-              <span class="pill">PB</span>
+              <span class="pill">Rekord</span>
             </div>
 
             <ul id="dashboardRecordsList" class="list">
-              <li>Brak rekordow.</li>
+              <li>Brak rekordów.</li>
             </ul>
           </article>
 
           <article class="card dashboard-section widget-dark">
             <div class="section-header">
               <div>
-                <p class="section-kicker">Czestotliwosc treningow</p>
+                <p class="section-kicker">Częstotliwość treningów</p>
                 <h2 class="section-title">Dni tygodnia</h2>
               </div>
-              <span class="pill">Week split</span>
+              <span class="pill">Podział tygodnia</span>
             </div>
 
             <ul id="dashboardFrequencyList" class="list frequency-list">
@@ -155,10 +150,10 @@
         <article class="card dashboard-section widget-neutral">
           <div class="section-header">
             <div>
-              <p class="section-kicker">Najczestsze cwiczenia</p>
-              <h2 class="section-title">Top wykonywane ruchy</h2>
+              <p class="section-kicker">Najczęstsze ćwiczenia</p>
+              <h2 class="section-title">Najczęściej wykonywane ruchy</h2>
             </div>
-            <span class="pill">Volume drivers</span>
+            <span class="pill">Największa objętość</span>
           </div>
 
           <ul id="dashboardTopExercises" class="list">
@@ -169,23 +164,23 @@
         <article class="card dashboard-section widget-blue-soft">
           <div class="section-header">
             <div>
-              <p class="section-kicker">Objetosc / Heatmapa</p>
-              <h2 class="section-title">Aktywnosc z ostatnich 12 tygodni</h2>
+              <p class="section-kicker">Objętość / mapa ciepła</p>
+              <h2 class="section-title">Aktywność z ostatnich 12 tygodni</h2>
             </div>
-            <span class="pill">Optional</span>
+            <span class="pill">Opcjonalne</span>
           </div>
 
-          <p id="dashboardVolumeSummary" class="text-muted">Brak danych o objetosci.</p>
-          <div id="dashboardHeatmap" class="heatmap-grid" aria-label="Heatmap aktywnosci"></div>
+          <p id="dashboardVolumeSummary" class="text-muted">Brak danych o objętości.</p>
+          <div id="dashboardHeatmap" class="heatmap-grid" aria-label="Mapa ciepła aktywności"></div>
         </article>
       </section>
     </main>
 
     <nav class="mobile-bottom-nav" aria-label="Nawigacja mobilna">
-      <a href="../home/" data-nav="home" class="mobile-bottom-link" aria-label="Home">
+      <a href="../home/" data-nav="home" class="mobile-bottom-link" aria-label="Strona główna">
         <img src="../logo/black_logo.png" alt="" class="mobile-bottom-icon mobile-bottom-logo" />
       </a>
-      <a href="../dashboard/" data-nav="dashboard" class="mobile-bottom-link" aria-label="Dashboard">
+      <a href="../dashboard/" data-nav="dashboard" class="mobile-bottom-link" aria-label="Panel">
         <svg class="mobile-bottom-icon" viewBox="0 0 24 24" aria-hidden="true">
           <rect x="4" y="12" width="3.5" height="8" rx="1.5"></rect>
           <rect x="10.25" y="8" width="3.5" height="12" rx="1.5"></rect>

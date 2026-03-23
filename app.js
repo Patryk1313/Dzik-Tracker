@@ -28,9 +28,16 @@ let homeHistoryExpanded = false;
 let workoutsPageCache = [];
 let workoutsExercisesCache = {};
 let editingWorkoutId = null;
-let dashboardStrengthRange = 12;
+let dashboardStrengthRange = 30;
 let addWorkoutTemplatesCache = [];
 let editingTemplateId = null;
+
+const DASHBOARD_STRENGTH_RANGE_LABELS = {
+  7: "1 tydzień",
+  30: "1 miesiąc",
+  183: "6 miesięcy",
+  365: "1 rok",
+};
 
 document.addEventListener("DOMContentLoaded", () => {
   onAuthStateChanged(auth, async (user) => {
@@ -158,13 +165,13 @@ function initLoginPage() {
     if (isRegisterMode) {
       authSubmit.textContent = "Utworz konto";
       authSwitchText.textContent = "Masz juz konto?";
-      authToggle.textContent = "Zaloguj sie";
+      authToggle.textContent = "Zaloguj się";
       nameGroup.classList.remove("hidden");
       nameInput.required = true;
     } else {
-      authSubmit.textContent = "Zaloguj sie";
+      authSubmit.textContent = "Zaloguj się";
       authSwitchText.textContent = "Nie masz konta?";
-      authToggle.textContent = "Zarejestruj sie";
+      authToggle.textContent = "Zarejestruj się";
       nameGroup.classList.add("hidden");
       nameInput.required = false;
       nameInput.value = "";
@@ -186,12 +193,12 @@ function initLoginPage() {
     const name = authForm.name.value.trim();
 
     if (!email || !password) {
-      showError("Email i haslo sa wymagane.", "authError");
+      showError("Email i hasło sa wymagane.", "authError");
       return;
     }
 
     if (isRegisterMode && !name) {
-      showError("Podaj imie do rejestracji.", "authError");
+      showError("Podaj imię do rejestracji.", "authError");
       return;
     }
 
@@ -201,7 +208,7 @@ function initLoginPage() {
       if (isRegisterMode) {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
-        // Tworzenie dokumentu uzytkownika po rejestracji.
+        // Tworzenie dokumentu użytkownika po rejestracji.
         await setDoc(doc(db, "users", userCredential.user.uid), {
           email,
           name,
@@ -259,8 +266,8 @@ function renderHomeHeader(user, userProfile) {
   }
 
   const displayName = getDisplayName(user, userProfile);
-  greetingEl.textContent = `Czesc ${displayName} 👋`;
-  greetingMetaEl.textContent = "Szybki dostep do Twoich treningow, celu tygodnia i aktywnosci calej spolecznosci.";
+  greetingEl.textContent = `Cześć ${displayName} 👋`;
+  greetingMetaEl.textContent = "Szybki dostęp do Twoich treningów, celu tygodnia i aktywności całej społeczności.";
 
   if (homeProfileName) {
     homeProfileName.textContent = displayName;
@@ -326,7 +333,7 @@ function renderUserStatus(workouts, weeklyGoal) {
     statusEmptyEl.classList.remove("hidden");
     lastWorkoutDaysEl.textContent = "Brak danych";
     lastWorkoutDateEl.textContent = "Dodaj pierwszy trening";
-    statusBadgeEl.textContent = "Brak aktywnosci";
+    statusBadgeEl.textContent = "Brak aktywności";
     return;
   }
 
@@ -432,8 +439,34 @@ async function initDashboardPage(user) {
   const workoutIds = workouts.map((workout) => workout.id);
   const exercisesByWorkout = await getExercisesByWorkoutIds(workoutIds);
 
-  renderDashboardStats(workouts, exercisesByWorkout);
-  renderDashboardPoints(workouts, exercisesByWorkout);
+  let globalPointsEntry = null;
+  let allExercisesByWorkout = {};
+  const allWorkoutsResult = await getAllWorkoutsSafe();
+  const allExercisesResult = await getAllExercisesSafe();
+  const hasGlobalPointsAccess = allWorkoutsResult.hasPermission && allExercisesResult.hasPermission;
+
+  if (hasGlobalPointsAccess) {
+    allExercisesByWorkout = indexExercisesByWorkout(allExercisesResult.exercises);
+    globalPointsEntry = calculatePointsByUser(allWorkoutsResult.workouts, allExercisesByWorkout, null).get(user.uid) || null;
+  }
+
+  const renderDashboardByRange = (rangeDays) => {
+    const scopedWorkouts = filterWorkoutsByRange(workouts, rangeDays);
+    const scopedWorkoutIds = scopedWorkouts.map((workout) => workout.id);
+    const scopedExercisesByWorkout = pickExercisesByWorkoutIds(exercisesByWorkout, scopedWorkoutIds);
+
+    let scopedGlobalPointsEntry = globalPointsEntry;
+    if (hasGlobalPointsAccess) {
+      const scopedGlobalWorkouts = filterWorkoutsByRange(allWorkoutsResult.workouts, rangeDays);
+      scopedGlobalPointsEntry = calculatePointsByUser(scopedGlobalWorkouts, allExercisesByWorkout, null).get(user.uid) || null;
+    }
+
+    renderDashboardStats(scopedWorkouts, scopedExercisesByWorkout, rangeDays);
+    renderDashboardPoints(scopedWorkouts, scopedExercisesByWorkout, scopedGlobalPointsEntry);
+  };
+
+  setupDashboardRangeToggle(renderDashboardByRange);
+  renderDashboardByRange(dashboardStrengthRange);
 
   toggleLoading(false);
 }
@@ -452,6 +485,26 @@ async function initAddWorkoutPage(user) {
   const templateBuilderState = document.getElementById("templateBuilderState");
   const cancelTemplateEditBtn = document.getElementById("cancelTemplateEditBtn");
   const saveTemplateBtn = document.getElementById("saveTemplateBtn");
+  const templateBuilderToggleBtn = document.getElementById("templateBuilderToggleBtn");
+  const templateBuilderContent = document.getElementById("templateBuilderContent");
+
+  const setTemplateBuilderExpanded = (expanded) => {
+    if (!templateBuilderToggleBtn || !templateBuilderContent) {
+      return;
+    }
+
+    templateBuilderContent.classList.toggle("hidden", !expanded);
+    templateBuilderToggleBtn.setAttribute("aria-expanded", String(expanded));
+    templateBuilderToggleBtn.textContent = expanded ? "Zwiń" : "Rozwiń";
+  };
+
+  if (templateBuilderToggleBtn && templateBuilderContent) {
+    templateBuilderToggleBtn.addEventListener("click", () => {
+      const expanded = templateBuilderToggleBtn.getAttribute("aria-expanded") === "true";
+      setTemplateBuilderExpanded(!expanded);
+    });
+    setTemplateBuilderExpanded(false);
+  }
 
   dateInput.value = formatDateForInput(new Date());
 
@@ -463,7 +516,7 @@ async function initAddWorkoutPage(user) {
     }
 
     templateSelect.innerHTML = `
-      <option value="">-- Brak template (pusta lista) --</option>
+      <option value="">-- Brak szablonu (pusta lista) --</option>
       ${addWorkoutTemplatesCache
         .map((template) => `<option value="${template.id}">${escapeHtml(template.name)}</option>`)
         .join("")}
@@ -476,7 +529,7 @@ async function initAddWorkoutPage(user) {
     }
 
     if (!addWorkoutTemplatesCache.length) {
-      savedTemplatesList.innerHTML = "<li>Brak wlasnych template.</li>";
+      savedTemplatesList.innerHTML = "<li>Brak własnych szablonow.</li>";
       return;
     }
 
@@ -490,7 +543,7 @@ async function initAddWorkoutPage(user) {
               .join(" | ")}</span>
             <div class="history-actions">
               <button class="history-action-btn" data-template-action="edit" data-id="${template.id}" type="button">Edytuj</button>
-              <button class="history-action-btn history-action-btn-danger" data-template-action="delete" data-id="${template.id}" type="button">Usun</button>
+              <button class="history-action-btn history-action-btn-danger" data-template-action="delete" data-id="${template.id}" type="button">Usuń</button>
             </div>
           </li>
         `
@@ -508,6 +561,7 @@ async function initAddWorkoutPage(user) {
 
       try {
         if (action === "edit") {
+          setTemplateBuilderExpanded(true);
           openTemplateEditor(templateId, templateExercisesContainer, templateBuilderForm, templateBuilderState, cancelTemplateEditBtn, saveTemplateBtn);
         }
 
@@ -538,7 +592,7 @@ async function initAddWorkoutPage(user) {
             templateSelect.value = "";
             applyTemplate();
           }
-          showSuccess("Template zostal usuniety.");
+          showSuccess("Szablon został usunięty.");
         }
       } catch (error) {
         showError(getFriendlyError(error));
@@ -563,12 +617,12 @@ async function initAddWorkoutPage(user) {
 
     wrapper.innerHTML = `
       <div class="exercise-header">
-        <strong>${isCustom ? "Wlasne cwiczenie" : "Cwiczenie z template"}</strong>
-        <button type="button" class="link-btn remove-exercise">Usun</button>
+        <strong>${isCustom ? "Własne ćwiczenie" : "Ćwiczenie z szablonu"}</strong>
+        <button type="button" class="link-btn remove-exercise">Usuń</button>
       </div>
       <div class="grid grid-2">
         <div class="form-row">
-          <label>Nazwa cwiczenia</label>
+          <label>Nazwa ćwiczenia</label>
           <input
             type="text"
             name="exerciseName"
@@ -583,7 +637,7 @@ async function initAddWorkoutPage(user) {
           <input type="number" name="sets" min="1" step="1" value="${Number(sets) || 4}" required />
         </div>
         <div class="form-row">
-          <label>Powtorzenia</label>
+          <label>Powtórzenia</label>
           <input type="number" name="reps" min="1" step="1" value="${Number(reps) || 8}" required />
         </div>
         <div class="form-row">
@@ -597,7 +651,7 @@ async function initAddWorkoutPage(user) {
     removeBtn.addEventListener("click", () => {
       wrapper.remove();
       if (!exercisesContainer.children.length && templateHint) {
-        templateHint.textContent = "Lista cwiczen jest pusta. Wybierz template lub dodaj wlasne cwiczenie.";
+        templateHint.textContent = "Lista ćwiczeń jest pusta. Wybierz szablon lub dodaj własne ćwiczenie.";
       }
     });
 
@@ -616,13 +670,13 @@ async function initAddWorkoutPage(user) {
 
     if (!templateId || !template) {
       if (templateHint) {
-        templateHint.textContent = "Brak wybranego template - lista cwiczen jest pusta.";
+        templateHint.textContent = "Brak wybranego szablonu - lista ćwiczeń jest pusta.";
       }
       return;
     }
 
     if (templateHint) {
-      templateHint.textContent = `Zaladowano template: ${template.name}.`;
+      templateHint.textContent = `Załadowano szablon: ${template.name}.`;
     }
 
     template.exercises.forEach((exercise) => addExerciseRow({ ...exercise, isCustom: false }));
@@ -637,13 +691,13 @@ async function initAddWorkoutPage(user) {
     row.className = "exercise-item";
     row.innerHTML = `
       <div class="exercise-header">
-        <strong>Cwiczenie template</strong>
-        <button type="button" class="link-btn remove-template-exercise">Usun</button>
+        <strong>Ćwiczenie szablonu</strong>
+        <button type="button" class="link-btn remove-template-exercise">Usuń</button>
       </div>
       <div class="grid grid-2">
         <div class="form-row">
-          <label>Nazwa cwiczenia</label>
-          <input type="text" class="template-exercise-name" value="${escapeHtml(data.name || "")}" placeholder="Np. Incline Bench" required />
+          <label>Nazwa ćwiczenia</label>
+          <input type="text" class="template-exercise-name" value="${escapeHtml(data.name || "")}" placeholder="Np. Wyciskanie skos" required />
         </div>
         <div class="form-row">
           <label>Domyslny ciezar (kg)</label>
@@ -674,7 +728,7 @@ async function initAddWorkoutPage(user) {
     );
 
     if (hasInvalid) {
-      throw new Error("Uzupelnij poprawnie wszystkie pola template.");
+      throw new Error("Uzupełnij poprawnie wszystkie pola szablonu.");
     }
 
     return exercises;
@@ -691,7 +745,7 @@ async function initAddWorkoutPage(user) {
   addExerciseBtn.addEventListener("click", () => {
     addExerciseRow({ isCustom: true, sets: 4, reps: 8, defaultWeight: 0 });
     if (templateHint) {
-      templateHint.textContent = "Dodano wlasne cwiczenie.";
+      templateHint.textContent = "Dodano własne ćwiczenie.";
     }
   });
 
@@ -706,7 +760,7 @@ async function initAddWorkoutPage(user) {
         const exercises = collectTemplateExercises();
 
         if (!templateName) {
-          throw new Error("Podaj nazwe template.");
+          throw new Error("Podaj nazwe szablonu.");
         }
 
         const payload = {
@@ -735,7 +789,7 @@ async function initAddWorkoutPage(user) {
         templateExercisesContainer.innerHTML = "";
         addTemplateExerciseRow();
         resetTemplateBuilder(templateBuilderState, cancelTemplateEditBtn, saveTemplateBtn);
-        showSuccess(isEditingTemplate ? "Template zostal zaktualizowany." : "Template zostal zapisany.");
+        showSuccess(isEditingTemplate ? "Szablon został zaktualizowany." : "Szablon został zapisany.");
       } catch (error) {
         showError(getFriendlyError(error));
       }
@@ -780,7 +834,7 @@ async function initAddWorkoutPage(user) {
       }
 
       if (!exerciseItems.length) {
-        throw new Error("Dodaj przynajmniej jedno cwiczenie.");
+        throw new Error("Dodaj przynajmniej jedno ćwiczenie.");
       }
 
       const exercises = exerciseItems.map((item) => ({
@@ -799,10 +853,10 @@ async function initAddWorkoutPage(user) {
       );
 
       if (hasInvalidExercise) {
-        throw new Error("Uzupelnij poprawnie wszystkie pola cwiczen.");
+        throw new Error("Uzupełnij poprawnie wszystkie pola ćwiczeń.");
       }
 
-      // Najpierw zapis treningu, potem cwiczen z workoutId.
+      // Najpierw zapis treningu, potem ćwiczeń z workoutId.
       const workoutRef = await addDoc(collection(db, "workouts"), {
         userId: user.uid,
         title: workoutTitle,
@@ -823,7 +877,7 @@ async function initAddWorkoutPage(user) {
         )
       );
 
-      showSuccess("Trening zostal zapisany.");
+      showSuccess("Trening został zapisany.");
       workoutForm.reset();
       dateInput.value = formatDateForInput(new Date());
       if (templateSelect) {
@@ -831,7 +885,7 @@ async function initAddWorkoutPage(user) {
       }
       exercisesContainer.innerHTML = "";
       if (templateHint) {
-        templateHint.textContent = "Brak wybranego template - lista cwiczen jest pusta.";
+        templateHint.textContent = "Brak wybranego szablonu - lista ćwiczeń jest pusta.";
       }
     } catch (error) {
       showError(getFriendlyError(error));
@@ -854,7 +908,7 @@ function openTemplateEditor(templateId, templateExercisesContainer, templateBuil
   template.exercises.forEach((exercise) => addTemplateExerciseRowForEditor(templateExercisesContainer, exercise));
 
   if (templateBuilderState) {
-    templateBuilderState.textContent = `Edytujesz template: ${template.name}`;
+    templateBuilderState.textContent = `Edytujesz szablon: ${template.name}`;
   }
 
   if (cancelTemplateEditBtn) {
@@ -871,13 +925,13 @@ function addTemplateExerciseRowForEditor(container, data = {}) {
   row.className = "exercise-item";
   row.innerHTML = `
     <div class="exercise-header">
-      <strong>Cwiczenie template</strong>
-      <button type="button" class="link-btn remove-template-exercise">Usun</button>
+      <strong>Ćwiczenie szablonu</strong>
+      <button type="button" class="link-btn remove-template-exercise">Usuń</button>
     </div>
     <div class="grid grid-2">
       <div class="form-row">
-        <label>Nazwa cwiczenia</label>
-        <input type="text" class="template-exercise-name" value="${escapeHtml(data.name || "")}" placeholder="Np. Incline Bench" required />
+        <label>Nazwa ćwiczenia</label>
+        <input type="text" class="template-exercise-name" value="${escapeHtml(data.name || "")}" placeholder="Np. Wyciskanie skos" required />
       </div>
       <div class="form-row">
         <label>Domyslny ciezar (kg)</label>
@@ -900,7 +954,7 @@ function resetTemplateBuilder(templateBuilderState, cancelTemplateEditBtn, saveT
   editingTemplateId = null;
 
   if (templateBuilderState) {
-    templateBuilderState.textContent = "Tworzysz nowy template.";
+    templateBuilderState.textContent = "Tworzysz nowy szablon.";
   }
 
   if (cancelTemplateEditBtn) {
@@ -908,7 +962,7 @@ function resetTemplateBuilder(templateBuilderState, cancelTemplateEditBtn, saveT
   }
 
   if (saveTemplateBtn) {
-    saveTemplateBtn.textContent = "Zapisz template";
+    saveTemplateBtn.textContent = "Zapisz szablon";
   }
 }
 
@@ -928,10 +982,10 @@ async function deleteTemplate(userId, templateId) {
 
   const data = templateSnap.data();
   if (data.userId !== userId) {
-    throw new Error("Nie mozesz usunac cudzego template.");
+    throw new Error("Nie możesz usunąć cudzego szablonu.");
   }
 
-  const shouldDelete = window.confirm("Czy na pewno chcesz usunac ten template?");
+  const shouldDelete = window.confirm("Czy na pewno chcesz usunąć ten szablon?");
   if (!shouldDelete) {
     return false;
   }
@@ -1001,6 +1055,7 @@ async function initProfileEditPage(user) {
   const form = document.getElementById("profileEditForm");
   const nameInput = document.getElementById("editProfileName");
   const birthDateInput = document.getElementById("editProfileBirthDate");
+  const weeklyGoalInput = document.getElementById("editProfileWeeklyGoal");
   const photoInput = document.getElementById("editProfilePhoto");
   const photoPreview = document.getElementById("editProfilePhotoPreview");
   const removePhotoBtn = document.getElementById("removeProfilePhotoBtn");
@@ -1043,6 +1098,7 @@ async function initProfileEditPage(user) {
 
     nameInput.value = profileData.name || "";
     birthDateInput.value = profileData.birthDate || "";
+    weeklyGoalInput.value = String(getWeeklyGoal(profileData));
   };
 
   photoInput.onchange = () => {
@@ -1060,7 +1116,7 @@ async function initProfileEditPage(user) {
 
     const maxBytes = 4 * 1024 * 1024;
     if (file.size > maxBytes) {
-      showError("Zdjecie jest za duze. Maksymalny rozmiar to 4 MB.", "pageError");
+      showError("Zdjęcie jest za duze. Maksymalny rozmiar to 4 MB.", "pageError");
       clearPreview();
       return;
     }
@@ -1096,7 +1152,7 @@ async function initProfileEditPage(user) {
       profileData.photoPath = "";
       clearPreview();
       renderCurrent();
-      showSuccess("Zdjecie profilowe zostalo usuniete.");
+      showSuccess("Zdjęcie profilowe zostało usunięte.");
     } catch (error) {
       showError(getFriendlyError(error));
     } finally {
@@ -1112,9 +1168,14 @@ async function initProfileEditPage(user) {
     try {
       const name = nameInput.value.trim();
       const birthDate = birthDateInput.value;
+      const weeklyGoal = Number(weeklyGoalInput.value);
 
       if (!name) {
-        throw new Error("Imie jest wymagane.");
+        throw new Error("Imię jest wymagane.");
+      }
+
+      if (!Number.isInteger(weeklyGoal) || weeklyGoal < 1 || weeklyGoal > 14) {
+        throw new Error("Cel tygodniowy musi być liczbą od 1 do 14.");
       }
 
       let birthYear = null;
@@ -1126,6 +1187,7 @@ async function initProfileEditPage(user) {
         name,
         birthDate: birthDate || "",
         birthYear,
+        weeklyGoal,
         email: profileData.email || user.email || "",
         updatedAt: serverTimestamp(),
       };
@@ -1159,7 +1221,7 @@ async function initProfileEditPage(user) {
 
       clearPreview();
       renderCurrent();
-      showSuccess("Profil zostal zaktualizowany.");
+      showSuccess("Profil został zaktualizowany.");
     } catch (error) {
       showError(getFriendlyError(error));
     } finally {
@@ -1192,7 +1254,7 @@ function renderWorkoutsPageList() {
   }
 
   if (!workoutsPageCache.length) {
-    list.innerHTML = "<li>Brak treningow. Dodaj pierwszy trening.</li>";
+    list.innerHTML = "<li>Brak treningów. Dodaj pierwszy trening.</li>";
     return;
   }
 
@@ -1207,7 +1269,7 @@ function renderWorkoutsPageList() {
                 `${escapeHtml(exercise.name)} (${exercise.sets}x${exercise.reps} @ ${exercise.weight}kg)`
             )
             .join(" | ")
-        : "Brak cwiczen";
+        : "Brak ćwiczeń";
 
       return `
         <li class="history-entry workouts-page-entry">
@@ -1217,7 +1279,7 @@ function renderWorkoutsPageList() {
           <span class="history-notes text-muted">${exercisesSummary}</span>
           <div class="history-actions">
             <button class="history-action-btn" data-workout-action="edit" data-id="${workout.id}" type="button">Edytuj</button>
-            <button class="history-action-btn history-action-btn-danger" data-workout-action="delete" data-id="${workout.id}" type="button">Usun</button>
+            <button class="history-action-btn history-action-btn-danger" data-workout-action="delete" data-id="${workout.id}" type="button">Usuń</button>
           </div>
         </li>
       `;
@@ -1275,7 +1337,7 @@ function setupWorkoutsEditor() {
       }
 
       if (!exercises.length) {
-        throw new Error("Dodaj przynajmniej jedno cwiczenie.");
+        throw new Error("Dodaj przynajmniej jedno ćwiczenie.");
       }
 
       await updateDoc(doc(db, "workouts", editingWorkoutId), {
@@ -1301,7 +1363,7 @@ function setupWorkoutsEditor() {
         )
       );
 
-      showSuccess("Trening zostal zaktualizowany.");
+      showSuccess("Trening został zaktualizowany.");
       closeWorkoutEditor();
       await initWorkoutsPage(auth.currentUser);
     } catch (error) {
@@ -1358,12 +1420,12 @@ function addWorkoutEditorExerciseRow(data = {}) {
   row.className = "exercise-item";
   row.innerHTML = `
     <div class="exercise-header">
-      <strong>Cwiczenie</strong>
-      <button type="button" class="link-btn workout-editor-remove">Usun</button>
+      <strong>Ćwiczenie</strong>
+      <button type="button" class="link-btn workout-editor-remove">Usuń</button>
     </div>
     <div class="grid grid-2">
       <div class="form-row">
-        <label>Nazwa cwiczenia</label>
+        <label>Nazwa ćwiczenia</label>
         <input type="text" class="edit-ex-name" value="${escapeHtml(data.name || "")}" required />
       </div>
       <div class="form-row">
@@ -1371,7 +1433,7 @@ function addWorkoutEditorExerciseRow(data = {}) {
         <input type="number" class="edit-ex-sets" min="1" step="1" value="${Number(data.sets || 1)}" required />
       </div>
       <div class="form-row">
-        <label>Powtorzenia</label>
+        <label>Powtórzenia</label>
         <input type="number" class="edit-ex-reps" min="1" step="1" value="${Number(data.reps || 1)}" required />
       </div>
       <div class="form-row">
@@ -1409,7 +1471,7 @@ function collectWorkoutEditorExercises() {
   );
 
   if (hasInvalid) {
-    throw new Error("Uzupelnij poprawnie wszystkie pola cwiczen.");
+    throw new Error("Uzupełnij poprawnie wszystkie pola ćwiczeń.");
   }
 
   return exercises;
@@ -1427,10 +1489,10 @@ async function deleteWorkoutFromWorkoutsPage(workoutId) {
 
   const workoutData = workoutSnap.data();
   if (workoutData.userId !== auth.currentUser.uid) {
-    throw new Error("Nie mozesz usunac cudzego treningu.");
+    throw new Error("Nie możesz usunąć cudzego treningu.");
   }
 
-  const shouldDelete = window.confirm("Czy na pewno chcesz usunac ten trening?");
+  const shouldDelete = window.confirm("Czy na pewno chcesz usunąć ten trening?");
   if (!shouldDelete) {
     return;
   }
@@ -1445,7 +1507,7 @@ async function deleteWorkoutFromWorkoutsPage(workoutId) {
     await Promise.all(snapshot.docs.map((exerciseDoc) => deleteDoc(doc(db, "exercises", exerciseDoc.id))));
     await deleteDoc(doc(db, "workouts", workoutId));
 
-    showSuccess("Trening zostal usuniety.");
+    showSuccess("Trening został usunięty.");
     await initWorkoutsPage(auth.currentUser);
   } finally {
     toggleLoading(false);
@@ -1548,7 +1610,11 @@ function normalizeExerciseName(name) {
   return String(name || "").trim().toLowerCase();
 }
 
-function calculatePointsByUser(workouts = [], exercisesByWorkout = {}, recentCutoffDate = null) {
+const WORKOUT_POINTS = 100;
+const PB_POINTS = 50;
+const WEEKLY_WINNER_BONUS_POINTS = 250;
+
+function calculateBasePointsByUser(workouts = [], exercisesByWorkout = {}, recentCutoffDate = null) {
   const workoutsByUser = new Map();
 
   workouts.forEach((workout) => {
@@ -1576,7 +1642,7 @@ function calculatePointsByUser(workouts = [], exercisesByWorkout = {}, recentCut
     let pbHits = 0;
 
     sorted.forEach((workout) => {
-      let workoutPoints = 100;
+      let workoutPoints = WORKOUT_POINTS;
       const exercises = exercisesByWorkout[workout.id] || [];
 
       exercises.forEach((exercise) => {
@@ -1592,7 +1658,7 @@ function calculatePointsByUser(workouts = [], exercisesByWorkout = {}, recentCut
 
         const previousMax = pbMaxByExercise.get(normalizedName);
         if (previousMax === undefined || weight > previousMax) {
-          workoutPoints += 50;
+          workoutPoints += PB_POINTS;
           pbHits += 1;
           pbMaxByExercise.set(normalizedName, weight);
         }
@@ -1620,12 +1686,93 @@ function calculatePointsByUser(workouts = [], exercisesByWorkout = {}, recentCut
   return pointsByUser;
 }
 
+function calculatePointsByUser(
+  workouts = [],
+  exercisesByWorkout = {},
+  recentCutoffDate = null,
+  includeWeeklyWinnerBonus = true
+) {
+  const pointsByUser = calculateBasePointsByUser(workouts, exercisesByWorkout, recentCutoffDate);
+
+  if (!includeWeeklyWinnerBonus) {
+    return pointsByUser;
+  }
+
+  const workoutsByWeek = new Map();
+  const currentWeekKey = getISOWeekKey(new Date());
+
+  workouts.forEach((workout) => {
+    if (!workout?.userId || !workout?.date) {
+      return;
+    }
+
+    const workoutDate = new Date(workout.date);
+    if (Number.isNaN(workoutDate.getTime())) {
+      return;
+    }
+
+    const weekKey = getISOWeekKey(workoutDate);
+    if (!workoutsByWeek.has(weekKey)) {
+      workoutsByWeek.set(weekKey, []);
+    }
+
+    workoutsByWeek.get(weekKey).push(workout);
+  });
+
+  workoutsByWeek.forEach((weekWorkouts, weekKey) => {
+    // Bonus przyznajemy po zamknieciu tygodnia (bez biezacego tygodnia).
+    if (weekKey === currentWeekKey) {
+      return;
+    }
+
+    const weekPointsByUser = calculateBasePointsByUser(weekWorkouts, exercisesByWorkout, null);
+    const winner = [...weekPointsByUser.entries()]
+      .map(([userId, data]) => ({
+        userId,
+        points: data.total,
+        workoutsCount: data.workoutsCount,
+      }))
+      .filter((entry) => entry.points > 0)
+      .sort(
+        (a, b) =>
+          b.points - a.points ||
+          b.workoutsCount - a.workoutsCount ||
+          a.userId.localeCompare(b.userId)
+      )[0];
+
+    if (!winner) {
+      return;
+    }
+
+    const weekStart = startOfISOWeek(new Date(weekWorkouts[0].date));
+    const awardDate = new Date(weekStart);
+    awardDate.setDate(awardDate.getDate() + 6);
+    awardDate.setHours(0, 0, 0, 0);
+
+    const current = pointsByUser.get(winner.userId) || {
+      total: 0,
+      recent: 0,
+      pbHits: 0,
+      workoutsCount: 0,
+    };
+
+    current.total += WEEKLY_WINNER_BONUS_POINTS;
+    if (recentCutoffDate && awardDate >= recentCutoffDate) {
+      current.recent += WEEKLY_WINNER_BONUS_POINTS;
+    }
+
+    pointsByUser.set(winner.userId, current);
+  });
+
+  return pointsByUser;
+}
+
 async function getExercisesByWorkoutIds(workoutIds) {
   if (!workoutIds.length) {
     return {};
   }
 
-  // Firestore nie wspiera prostego join, dlatego pobieramy cwiczenia per trening.
+  // Firestore nie wspiera prostego join, dlatego pobieramy ćwiczenia per trening.
   const entries = await Promise.all(
     workoutIds.map(async (workoutId) => {
       const q = query(collection(db, "exercises"), where("workoutId", "==", workoutId));
@@ -1658,7 +1805,7 @@ function renderLastWorkout(workouts, exercisesByWorkout) {
       <p class="last-workout-notes text-muted">${
         latest.notes ? escapeHtml(latest.notes) : "Brak notatek"
       }</p>
-      <p class="text-muted">Brak cwiczen w tym treningu.</p>
+      <p class="text-muted">Brak ćwiczeń w tym treningu.</p>
     `;
     return;
   }
@@ -1692,7 +1839,7 @@ function renderWorkoutHistory(workouts, exercisesByWorkout) {
   }
 
   if (!workouts.length) {
-    historyList.innerHTML = "<li>Brak historii treningow.</li>";
+    historyList.innerHTML = "<li>Brak historii treningów.</li>";
     if (historyToggleBtn) {
       historyToggleBtn.classList.add("hidden");
     }
@@ -1720,7 +1867,7 @@ function renderWorkoutHistory(workouts, exercisesByWorkout) {
   if (historyToggleBtn) {
     if (workouts.length > 6) {
       historyToggleBtn.classList.remove("hidden");
-      historyToggleBtn.textContent = homeHistoryExpanded ? "Pokaz mniej" : "Pokaz wiecej";
+      historyToggleBtn.textContent = homeHistoryExpanded ? "Pokaż mniej" : "Pokaż więcej";
       historyToggleBtn.onclick = () => {
         homeHistoryExpanded = !homeHistoryExpanded;
         renderWorkoutHistory(workouts, exercisesByWorkout);
@@ -1740,9 +1887,11 @@ async function renderGlobalRanking(workouts, exercisesByWorkout, hasPermission =
     return;
   }
 
+  rankingSummaryEl.textContent = "";
+  rankingSummaryEl.classList.add("hidden");
+
   if (!hasPermission) {
-    rankingSummaryEl.textContent = "Brak uprawnien do globalnego rankingu punktowego. Zaktualizuj reguly Firestore.";
-    rankingEmptyEl.textContent = "Ranking jest ukryty do czasu wlaczenia odczytu workouts i exercises dla zalogowanych uzytkownikow.";
+    rankingEmptyEl.textContent = "Ranking jest ukryty do czasu wlaczenia odczytu workouts i exercises dla zalogowanych użytkowników.";
     rankingEmptyEl.classList.remove("hidden");
     rankingListEl.innerHTML = "<li>Brak danych rankingu.</li>";
     return;
@@ -1786,13 +1935,9 @@ async function renderGlobalRanking(workouts, exercisesByWorkout, hasPermission =
   );
   const profileById = new Map(profiles.map((entry) => [entry.userId, entry.profile]));
 
-  const totalWorkouts = recentWorkouts.length;
-  const totalPoints = ranking.reduce((sum, entry) => sum + entry.points, 0);
-  rankingSummaryEl.textContent = `${ranking.length} aktywnych osob, ${totalWorkouts} treningow, ${totalPoints} pkt w 7 dni`;
-
   if (!ranking.length) {
     rankingEmptyEl.classList.remove("hidden");
-    rankingListEl.innerHTML = "<li>Brak aktywnosci w rankingu.</li>";
+    rankingListEl.innerHTML = "<li>Brak aktywności w rankingu.</li>";
     return;
   }
 
@@ -1807,7 +1952,7 @@ async function renderGlobalRanking(workouts, exercisesByWorkout, hasPermission =
       const profile = profileById.get(entry.userId) || null;
       const label = isCurrentUser
         ? "Ty"
-        : profile?.name || `Uzytkownik ${entry.userId.slice(0, 4).toUpperCase()}`;
+        : profile?.name || `Użytkownik ${entry.userId.slice(0, 4).toUpperCase()}`;
       const avatar = profile?.photoURL || "";
       const ratio = Math.max(12, (entry.points / bestValue) * 100);
 
@@ -1833,24 +1978,23 @@ async function renderGlobalRanking(workouts, exercisesByWorkout, hasPermission =
     .join("");
 }
 
-function renderDashboardPoints(workouts, exercisesByWorkout) {
+function renderDashboardPoints(workouts, exercisesByWorkout, globalPointsEntry = null) {
   const totalEl = document.getElementById("dashboardPointsTotal");
-  const workoutsEl = document.getElementById("dashboardPointsWorkouts");
-  const pbEl = document.getElementById("dashboardPointsPB");
 
-  if (!totalEl || !workoutsEl || !pbEl) {
+  if (!totalEl) {
     return;
   }
 
-  const points = calculatePointsByUser(
+  const localPoints = calculatePointsByUser(
     workouts.map((workout) => ({ ...workout, userId: "current-user" })),
     exercisesByWorkout,
-    null
+    null,
+    false
   ).get("current-user") || { total: 0, pbHits: 0, workoutsCount: 0 };
 
+  const points = globalPointsEntry || localPoints;
+
   totalEl.textContent = `${points.total} pkt`;
-  workoutsEl.textContent = `${points.workoutsCount} x 100 pkt`;
-  pbEl.textContent = `${points.pbHits} x 50 pkt`;
 }
 
 function renderPB(workouts, exercisesByWorkout) {
@@ -1860,7 +2004,7 @@ function renderPB(workouts, exercisesByWorkout) {
   }
 
   if (!workouts.length) {
-    pbList.innerHTML = "<li>Brak rekordow. Dodaj pierwszy trening.</li>";
+    pbList.innerHTML = "<li>Brak rekordów. Dodaj pierwszy trening.</li>";
     return;
   }
 
@@ -1881,7 +2025,7 @@ function renderPB(workouts, exercisesByWorkout) {
   });
 
   if (!pbMap.size) {
-    pbList.innerHTML = "<li>Brak rekordow. Dodaj cwiczenia z ciezarem.</li>";
+    pbList.innerHTML = "<li>Brak rekordów. Dodaj ćwiczenia z ciężarem.</li>";
     return;
   }
 
@@ -1895,17 +2039,16 @@ function renderPB(workouts, exercisesByWorkout) {
   pbList.innerHTML = rows.join("");
 }
 
-function renderDashboardStats(workouts, exercisesByWorkout) {
+function renderDashboardStats(workouts, exercisesByWorkout, range = dashboardStrengthRange) {
   renderDashboardOverview(workouts, exercisesByWorkout);
-  setupDashboardRangeToggle(workouts, exercisesByWorkout);
-  renderDashboardStrengthChart(workouts, exercisesByWorkout, dashboardStrengthRange);
+  renderDashboardStrengthChart(workouts, exercisesByWorkout, range);
   renderDashboardRecords(workouts, exercisesByWorkout);
   renderDashboardFrequency(workouts);
   renderDashboardTopExercises(workouts, exercisesByWorkout);
   renderDashboardHeatmap(workouts, exercisesByWorkout);
 }
 
-function setupDashboardRangeToggle(workouts, exercisesByWorkout) {
+function setupDashboardRangeToggle(onRangeChange) {
   const toggle = document.getElementById("strengthRangeToggle");
   if (!toggle) {
     return;
@@ -1914,6 +2057,10 @@ function setupDashboardRangeToggle(workouts, exercisesByWorkout) {
   const buttons = [...toggle.querySelectorAll(".range-btn[data-strength-range]")];
   buttons.forEach((button) => {
     const value = Number(button.dataset.strengthRange);
+    if (!Number.isFinite(value)) {
+      return;
+    }
+
     button.classList.toggle("active", value === dashboardStrengthRange);
 
     button.onclick = () => {
@@ -1923,9 +2070,38 @@ function setupDashboardRangeToggle(workouts, exercisesByWorkout) {
         item.classList.toggle("active", itemValue === dashboardStrengthRange);
       });
 
-      renderDashboardStrengthChart(workouts, exercisesByWorkout, dashboardStrengthRange);
+      if (typeof onRangeChange === "function") {
+        onRangeChange(dashboardStrengthRange);
+      }
     };
   });
+}
+
+function getDashboardRangeCutoffDate(rangeDays) {
+  const parsedRange = Number(rangeDays);
+  const safeRange = Number.isFinite(parsedRange) && parsedRange > 0 ? parsedRange : 30;
+  const cutoff = new Date();
+  cutoff.setHours(0, 0, 0, 0);
+  cutoff.setDate(cutoff.getDate() - (safeRange - 1));
+  return cutoff;
+}
+
+function filterWorkoutsByRange(workouts, rangeDays) {
+  const cutoff = getDashboardRangeCutoffDate(rangeDays);
+
+  return workouts.filter((workout) => {
+    const workoutDate = new Date(workout.date);
+    workoutDate.setHours(0, 0, 0, 0);
+    return !Number.isNaN(workoutDate.getTime()) && workoutDate >= cutoff;
+  });
+}
+
+function pickExercisesByWorkoutIds(exercisesByWorkout, workoutIds) {
+  const scoped = {};
+  workoutIds.forEach((id) => {
+    scoped[id] = exercisesByWorkout[id] || [];
+  });
+  return scoped;
 }
 
 function renderDashboardOverview(workouts, exercisesByWorkout) {
@@ -1965,13 +2141,15 @@ function renderDashboardOverview(workouts, exercisesByWorkout) {
   exerciseCountEl.textContent = String(exerciseCount);
 }
 
-function renderDashboardStrengthChart(workouts, exercisesByWorkout, range = 12) {
+function renderDashboardStrengthChart(workouts, exercisesByWorkout, range = 30) {
   const canvas = document.getElementById("strengthChart");
   const summaryEl = document.getElementById("strengthSummary");
 
   if (!canvas || !summaryEl) {
     return;
   }
+
+  const rangeDays = Number.isFinite(Number(range)) ? Number(range) : 30;
 
   const series = workouts
     .slice()
@@ -1984,11 +2162,10 @@ function renderDashboardStrengthChart(workouts, exercisesByWorkout, range = 12) 
         value: maxWeight,
       };
     })
-    .filter((point) => point.value > 0)
-    .slice(-range);
+    .filter((point) => point.value > 0);
 
   if (!series.length) {
-    summaryEl.textContent = "Brak danych ciezaru do wykresu progresu silowego.";
+    summaryEl.textContent = "Brak danych ciężaru do wykresu progresu siłowego.";
     clearCanvas(canvas);
     return;
   }
@@ -1997,7 +2174,8 @@ function renderDashboardStrengthChart(workouts, exercisesByWorkout, range = 12) 
   const end = series[series.length - 1].value;
   const delta = end - start;
   const sign = delta > 0 ? "+" : "";
-  summaryEl.textContent = `Top ciezar, zakres ${range} treningow, zmiana ${sign}${delta.toFixed(1)} kg`;
+  const rangeLabel = DASHBOARD_STRENGTH_RANGE_LABELS[rangeDays] || `${rangeDays} dni`;
+  summaryEl.textContent = `Najwyższy ciężar, zakres ${rangeLabel}, zmiana ${sign}${delta.toFixed(1)} kg`;
 
   drawDashboardStrengthLine(canvas, series);
 }
@@ -2057,7 +2235,7 @@ function drawDashboardStrengthLine(canvas, series) {
     context.stroke();
     context.textAlign = "left";
     context.textBaseline = "middle";
-    context.fillText(Math.round(value).toLocaleString("en-US"), 8, y);
+    context.fillText(Math.round(value).toLocaleString("pl-PL"), 8, y);
   }
 
   const points = series.map((point, index) => {
@@ -2113,7 +2291,7 @@ function drawDashboardStrengthLine(canvas, series) {
     context.arc(point.x, point.y, 4.2, 0, Math.PI * 2);
     context.fill();
 
-    const label = Math.round(point.value).toLocaleString("en-US");
+    const label = Math.round(point.value).toLocaleString("pl-PL");
     const metrics = context.measureText(label);
     const labelWidth = Math.max(54, metrics.width + 18);
     const labelHeight = 26;
@@ -2179,7 +2357,7 @@ function renderDashboardRecords(workouts, exercisesByWorkout) {
   });
 
   if (!pbMap.size) {
-    recordsList.innerHTML = "<li>Brak rekordow.</li>";
+    recordsList.innerHTML = "<li>Brak rekordów.</li>";
     return;
   }
 
@@ -2271,7 +2449,7 @@ function renderDashboardHeatmap(workouts, exercisesByWorkout) {
   });
 
   const totalVolume = [...volumeByDate.values()].reduce((a, b) => a + b, 0);
-  summaryEl.textContent = `Laczna objetosc: ${Math.round(totalVolume).toLocaleString("pl-PL")} kg (sets x reps x ciezar)`;
+  summaryEl.textContent = `Łączna objętość: ${Math.round(totalVolume).toLocaleString("pl-PL")} kg (sets x reps x ciężar)`;
 
   const days = [];
   const today = new Date();
@@ -2412,7 +2590,7 @@ function formatTrainingCount(value) {
     return `${count} treningi`;
   }
 
-  return `${count} treningow`;
+  return `${count} treningów`;
 }
 
 function escapeHtml(value) {
@@ -2479,15 +2657,15 @@ function getFriendlyError(error) {
   }
 
   if (code.includes("auth/weak-password")) {
-    return "Haslo jest za slabe (minimum 6 znakow).";
+    return "Hasło jest za słabe (minimum 6 znakow).";
   }
 
   if (code.includes("auth/invalid-credential") || code.includes("auth/wrong-password")) {
-    return "Niepoprawny email lub haslo.";
+    return "Niepoprawny email lub hasło.";
   }
 
   if (code.includes("auth/user-not-found")) {
-    return "Uzytkownik nie istnieje.";
+    return "Użytkownik nie istnieje.";
   }
 
   if (code.includes("permission-denied")) {

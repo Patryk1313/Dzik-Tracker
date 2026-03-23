@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dzik - Home</title>
+    <title>Dzik</title>
     <link rel="icon" type="image/png" href="../logo/black_logo.png" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
@@ -11,20 +11,20 @@
     <header class="topbar">
       <div class="topbar-inner">
         <div class="brand-cluster">
-          <a class="brand brand-mark" href="../home/" aria-label="Dzik home"><img src="../logo/black_logo.png" alt="Dzik" /></a>
+          <a class="brand brand-mark" href="../home/" aria-label="Dzik strona główna"><img src="../logo/black_logo.png" alt="Dzik" /></a>
           <a class="brand brand-name" href="../home/">Dzik</a>
         </div>
 
         <nav class="nav-links">
-          <a href="../home/" data-nav="home">Home</a>
-          <a href="../dashboard/" data-nav="dashboard">Dashboard</a>
+          <a href="../home/" data-nav="home">Główna</a>
+          <a href="../dashboard/" data-nav="dashboard">Panel</a>
           <a href="../workouts/" data-nav="workouts">Treningi</a>
           <a href="../profile/" data-nav="profile">Profil</a>
         </nav>
 
         <div class="user-actions">
           <span class="topbar-dot"></span>
-          <img id="navUserPhoto" class="nav-user-photo hidden" alt="Avatar" />
+          <img id="navUserPhoto" class="nav-user-photo hidden" alt="Awatar" />
           <span class="nav-user" id="navUser"></span>
           <button id="logoutBtn" class="btn btn-ghost" type="button">Wyloguj</button>
         </div>
@@ -35,57 +35,57 @@
       <section class="home-header card hero-card hero-card-wide">
         <div class="home-header-copy">
           <div class="home-profile-row">
-            <img id="homeAvatarPhoto" class="home-avatar-image hidden" alt="Avatar" />
+            <img id="homeAvatarPhoto" class="home-avatar-image hidden" alt="Awatar" />
             <div id="homeAvatarFallback" class="home-avatar home-avatar-fallback">P</div>
             <div class="home-profile-meta">
               <span class="home-profile-label">Profil</span>
-              <strong id="homeProfileName" class="home-profile-text">Twoj panel</strong>
+              <strong id="homeProfileName" class="home-profile-text">Twój panel</strong>
             </div>
           </div>
-          <p class="section-kicker">Daily board</p>
-          <h1 id="homeGreeting" class="page-title home-title">Czesc</h1>
+          <p class="section-kicker">Dzienna tablica</p>
+          <h1 id="homeGreeting" class="page-title home-title">Cześć</h1>
           <p id="homeGreetingMeta" class="text-muted home-subtitle">
-            Szybki podglad Twojej aktywnosci i postepow.
+            Szybki podgląd Twojej aktywności i postępów.
           </p>
         </div>
       </section>
 
       <div id="pageError" class="error-box hidden"></div>
-      <div id="pageLoading" class="loading-box hidden">Ladowanie danych...</div>
+      <div id="pageLoading" class="loading-box hidden">Ładowanie danych...</div>
 
       <section class="home-section-grid">
         <article class="card status-card widget-pink">
           <div class="section-header">
             <div>
-              <p class="section-kicker">Status uzytkownika</p>
-              <h2 class="section-title">Weekly highlights</h2>
+              <p class="section-kicker">Status użytkownika</p>
+              <h2 class="section-title">Tygodniowe podsumowanie</h2>
             </div>
             <span id="statusBadge" class="pill">Start tygodnia</span>
           </div>
 
-          <div id="statusEmpty" class="status-empty hidden">Brak treningow - dodaj pierwszy</div>
+          <div id="statusEmpty" class="status-empty hidden">Brak treningów - dodaj pierwszy</div>
 
           <div class="status-grid">
             <article class="status-tile status-tile-wide">
-              <span class="status-label">Last session</span>
+              <span class="status-label">Ostatnia sesja</span>
               <strong id="lastWorkoutDays" class="status-value">-</strong>
               <span id="lastWorkoutDate" class="status-meta">Brak danych</span>
             </article>
 
             <article class="status-tile">
-              <span class="status-label">Streak</span>
+              <span class="status-label">Seria</span>
               <strong id="streakWeeks" class="status-value">0</strong>
-              <span class="status-meta">tygodni z rzedu</span>
+              <span class="status-meta">tygodni z rzędu</span>
             </article>
 
             <article class="status-tile">
-              <span class="status-label">Weekly goal</span>
+              <span class="status-label">Cel tygodniowy</span>
               <strong id="weeklyGoalValue" class="status-value">3</strong>
-              <span class="status-meta">treningi / tydzien</span>
+              <span id="weeklyGoalMeta" class="status-meta">3 treningi tygodniowo</span>
             </article>
 
             <article class="status-tile status-progress-tile">
-              <span class="status-label">Week progress</span>
+              <span class="status-label">Postęp tygodnia</span>
               <strong id="weekProgressText" class="status-value">0 / 3</strong>
               <div class="status-progress-track">
                 <div id="weekProgressBar" class="status-progress-bar"></div>
@@ -97,11 +97,11 @@
         <article class="card history-card widget-neutral" id="my-trainings">
           <div class="section-header">
             <div>
-              <p class="section-kicker">Historia treningow</p>
-              <h2 class="section-title">Training history</h2>
+              <p class="section-kicker">Historia treningów</p>
+              <h2 class="section-title">Historia treningów</h2>
             </div>
             <button id="historyToggleBtn" class="btn btn-ghost history-toggle hidden" type="button">
-              Pokaz wiecej
+              Pokaż więcej
             </button>
           </div>
 
@@ -118,11 +118,11 @@
               <p class="section-kicker">Globalny ranking</p>
               <h2 class="section-title">Ranking (7 dni)</h2>
             </div>
-            <span class="pill">Leaderboard</span>
+            <span class="pill">Ranking</span>
           </div>
 
-          <p id="rankingSummary" class="text-muted ranking-summary">Brak danych.</p>
-          <p id="rankingEmpty" class="text-muted hidden">Brak aktywnosci wszystkich uzytkownikow w ostatnich 7 dniach.</p>
+          <p id="rankingSummary" class="text-muted ranking-summary"></p>
+          <p id="rankingEmpty" class="text-muted hidden">Brak aktywności wszystkich użytkowników w ostatnich 7 dniach.</p>
 
           <ul id="rankingList" class="list ranking-list">
             <li>Brak danych.</li>
@@ -132,10 +132,10 @@
     </main>
 
     <nav class="mobile-bottom-nav" aria-label="Nawigacja mobilna">
-      <a href="../home/" data-nav="home" class="mobile-bottom-link" aria-label="Home">
+      <a href="../home/" data-nav="home" class="mobile-bottom-link" aria-label="Strona główna">
         <img src="../logo/black_logo.png" alt="" class="mobile-bottom-icon mobile-bottom-logo" />
       </a>
-      <a href="../dashboard/" data-nav="dashboard" class="mobile-bottom-link" aria-label="Dashboard">
+      <a href="../dashboard/" data-nav="dashboard" class="mobile-bottom-link" aria-label="Panel">
         <svg class="mobile-bottom-icon" viewBox="0 0 24 24" aria-hidden="true">
           <rect x="4" y="12" width="3.5" height="8" rx="1.5"></rect>
           <rect x="10.25" y="8" width="3.5" height="12" rx="1.5"></rect>

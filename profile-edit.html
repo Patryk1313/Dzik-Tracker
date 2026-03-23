@@ -11,20 +11,20 @@
     <header class="topbar">
       <div class="topbar-inner">
         <div class="brand-cluster">
-          <a class="brand brand-mark" href="index.html" aria-label="Dzik home"><img src="logo/black_logo.png" alt="Dzik" /></a>
+          <a class="brand brand-mark" href="index.html" aria-label="Dzik strona główna"><img src="logo/black_logo.png" alt="Dzik" /></a>
           <a class="brand brand-name" href="index.html">Dzik</a>
         </div>
 
         <nav class="nav-links">
-          <a href="index.html" data-nav="home">Home</a>
-          <a href="dashboard.html" data-nav="dashboard">Dashboard</a>
+          <a href="index.html" data-nav="home">Główna</a>
+          <a href="dashboard.html" data-nav="dashboard">Panel</a>
           <a href="workouts.html" data-nav="workouts">Treningi</a>
           <a href="profile.html" data-nav="profile">Profil</a>
         </nav>
 
         <div class="user-actions">
           <span class="topbar-dot"></span>
-          <img id="navUserPhoto" class="nav-user-photo hidden" alt="Avatar" />
+          <img id="navUserPhoto" class="nav-user-photo hidden" alt="Awatar" />
           <span class="nav-user" id="navUser"></span>
           <button id="logoutBtn" class="btn btn-ghost" type="button">Wyloguj</button>
         </div>
@@ -33,9 +33,9 @@
 
     <main class="container app-board">
       <section class="card hero-card">
-        <p class="section-kicker">Personal panel</p>
+        <p class="section-kicker">Panel osobisty</p>
         <h1 class="page-title">Edycja profilu</h1>
-        <p class="text-muted">Zmieniaj imie, date urodzenia i zdjecie profilowe.</p>
+        <p class="text-muted">Zmieniaj imię, datę urodzenia, cel tygodniowy i zdjęcie profilowe.</p>
       </section>
 
       <div id="pageError" class="error-box hidden"></div>
@@ -46,14 +46,14 @@
         <article class="card widget-neutral">
           <div class="section-header">
             <div>
-              <p class="section-kicker">Podglad</p>
+              <p class="section-kicker">Podgląd</p>
               <h2 class="section-title">Aktualne dane</h2>
             </div>
-            <a href="profile.html" class="btn btn-ghost">Wroc do profilu</a>
+            <a href="profile.html" class="btn btn-ghost">Wróć do profilu</a>
           </div>
 
           <div class="profile-hero">
-            <img id="currentProfilePhoto" class="profile-photo hidden" alt="Zdjecie profilowe" />
+            <img id="currentProfilePhoto" class="profile-photo hidden" alt="Zdjęcie profilowe" />
             <div id="currentProfileFallback" class="profile-avatar-fallback">P</div>
             <div class="profile-hero-meta">
               <strong id="currentProfileName">-</strong>
@@ -63,7 +63,7 @@
 
           <form id="profileEditForm" class="form" novalidate>
             <div class="form-row">
-              <label for="editProfileName">Imie</label>
+              <label for="editProfileName">Imię</label>
               <input id="editProfileName" name="editProfileName" type="text" maxlength="40" required />
             </div>
 
@@ -73,14 +73,19 @@
             </div>
 
             <div class="form-row">
-              <label for="editProfilePhoto">Nowe zdjecie profilowe</label>
+              <label for="editProfileWeeklyGoal">Cel tygodniowy (treningi)</label>
+              <input id="editProfileWeeklyGoal" name="editProfileWeeklyGoal" type="number" min="1" max="14" step="1" required />
+            </div>
+
+            <div class="form-row">
+              <label for="editProfilePhoto">Nowe zdjęcie profilowe</label>
               <input id="editProfilePhoto" name="editProfilePhoto" type="file" accept="image/*" />
-              <img id="editProfilePhotoPreview" class="profile-photo-preview hidden" alt="Podglad nowego zdjecia" />
+              <img id="editProfilePhotoPreview" class="profile-photo-preview hidden" alt="Podgląd nowego zdjecia" />
               <p class="text-muted" style="margin: 0">Format: JPG/PNG/WebP, maks. 4 MB.</p>
             </div>
 
             <div class="grid grid-2">
-              <button id="removeProfilePhotoBtn" class="btn btn-ghost" type="button">Usun zdjecie profilowe</button>
+              <button id="removeProfilePhotoBtn" class="btn btn-ghost" type="button">Usuń zdjęcie profilowe</button>
               <button class="btn btn-primary" type="submit">Zapisz zmiany</button>
             </div>
           </form>
@@ -89,10 +94,10 @@
     </main>
 
     <nav class="mobile-bottom-nav" aria-label="Nawigacja mobilna">
-      <a href="index.html" data-nav="home" class="mobile-bottom-link" aria-label="Home">
+      <a href="index.html" data-nav="home" class="mobile-bottom-link" aria-label="Strona główna">
         <img src="logo/black_logo.png" alt="" class="mobile-bottom-icon mobile-bottom-logo" />
       </a>
-      <a href="dashboard.html" data-nav="dashboard" class="mobile-bottom-link" aria-label="Dashboard">
+      <a href="dashboard.html" data-nav="dashboard" class="mobile-bottom-link" aria-label="Panel">
         <svg class="mobile-bottom-icon" viewBox="0 0 24 24" aria-hidden="true">
           <rect x="4" y="12" width="3.5" height="8" rx="1.5"></rect>
           <rect x="10.25" y="8" width="3.5" height="12" rx="1.5"></rect>
