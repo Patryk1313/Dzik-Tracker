@@ -44,22 +44,30 @@
 
       <section class="card widget-neutral">
         <form id="workoutForm" class="form">
-          <div class="form-row">
-            <label for="workoutTemplate">Wybierz szablon</label>
-            <select id="workoutTemplate" name="workoutTemplate">
-              <option value="">-- Brak szablonu (pusta lista) --</option>
-            </select>
-          </div>
+          <div class="workout-setup-grid">
+            <div class="form-row">
+              <label for="workoutTemplate">Wybierz szablon</label>
+              <select id="workoutTemplate" name="workoutTemplate">
+                <option value="">Wybierz gotowy trening</option>
+              </select>
+            </div>
 
-          <div class="grid grid-2">
             <div class="form-row">
               <label for="workoutDate">Data treningu</label>
               <input id="workoutDate" name="workoutDate" type="date" required />
             </div>
 
             <div class="form-row">
-              <label for="workoutNotes">Notatki</label>
-              <input id="workoutNotes" name="workoutNotes" type="text" placeholder="Np. Dobry trening push" />
+              <label for="workoutName">Nazwa treningu</label>
+              <input
+                id="workoutName"
+                name="workoutName"
+                type="text"
+                list="workoutNameList"
+                placeholder="Np. Push"
+                required
+              />
+              <datalist id="workoutNameList"></datalist>
             </div>
           </div>
 
@@ -69,8 +77,8 @@
             <div id="exercisesContainer" class="grid"></div>
           </div>
 
-          <div class="grid grid-2">
-            <button id="addExerciseBtn" class="btn btn-ghost" type="button">+ Dodaj ćwiczenie</button>
+          <div class="workout-action-row">
+            <button id="addExerciseBtn" class="btn btn-ghost" type="button">+ Exercise</button>
             <button class="btn btn-primary" type="submit">Zapisz trening</button>
           </div>
         </form>

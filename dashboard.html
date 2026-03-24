@@ -97,81 +97,145 @@
           <strong id="dashboardPointsTotal" class="overview-value">0 pkt</strong>
         </article>
 
-        <article class="card dashboard-section dashboard-strength-card">
+        <!-- Forma tygodnia hero section -->
+        <article class="card dashboard-section widget-pro-hero dashboard-form-card">
           <div class="section-header">
             <div>
-              <p class="section-kicker">Progres siłowy</p>
-              <h2 class="section-title">Wykres postępu (ostatnie treningi)</h2>
+              <p class="section-kicker">Forma tygodnia</p>
+              <h2 class="section-title">Score formy</h2>
             </div>
-            <div class="range-toggle" id="strengthRangeToggle" aria-label="Zakres wykresu siłowego">
-              <button class="range-btn" data-strength-range="7" type="button">1 tydzień</button>
-              <button class="range-btn active" data-strength-range="30" type="button">1 miesiąc</button>
-              <button class="range-btn" data-strength-range="183" type="button">6 miesięcy</button>
-              <button class="range-btn" data-strength-range="365" type="button">1 rok</button>
+            <div class="dashboard-hero-actions">
+              <span class="pill" id="formScoreBadge">-</span>
             </div>
           </div>
 
-          <p id="strengthSummary" class="text-muted">Brak danych do wykresu.</p>
-          <div class="chart-shell dashboard-chart-shell">
-            <canvas id="strengthChart" height="260"></canvas>
+          <div class="form-score-container">
+            <div class="form-score-main">
+              <div class="form-score-circle">
+                <div class="form-score-value" id="formScoreValue">-</div>
+              </div>
+              <div class="form-score-metrics">
+                <div class="form-metric">
+                  <span class="form-metric-label">Siła</span>
+                  <div class="form-metric-bar">
+                    <div class="form-metric-fill" id="formMetricStrength"></div>
+                  </div>
+                  <span class="form-metric-value" id="formMetricStrengthValue">-</span>
+                </div>
+                <div class="form-metric">
+                  <span class="form-metric-label">Regularność</span>
+                  <div class="form-metric-bar">
+                    <div class="form-metric-fill" id="formMetricRegularity"></div>
+                  </div>
+                  <span class="form-metric-value" id="formMetricRegularityValue">-</span>
+                </div>
+                <div class="form-metric">
+                  <span class="form-metric-label">Objętość</span>
+                  <div class="form-metric-bar">
+                    <div class="form-metric-fill" id="formMetricVolume"></div>
+                  </div>
+                  <span class="form-metric-value" id="formMetricVolumeValue">-</span>
+                </div>
+              </div>
+            </div>
+            <div class="form-insight-box">
+              <p class="form-insight-label">Co poprawić teraz:</p>
+              <p class="form-insight-text" id="formInsightText">-</p>
+            </div>
           </div>
         </article>
 
-        <div class="dashboard-grid-2">
-          <article class="card dashboard-section widget-pink">
-            <div class="section-header">
-              <div>
-                <p class="section-kicker">Rekordy</p>
-                <h2 class="section-title">Najlepsze wyniki</h2>
-              </div>
-              <span class="pill">Rekord</span>
-            </div>
-
-            <ul id="dashboardRecordsList" class="list">
-              <li>Brak rekordów.</li>
-            </ul>
-          </article>
-
-          <article class="card dashboard-section widget-dark">
-            <div class="section-header">
-              <div>
-                <p class="section-kicker">Częstotliwość treningów</p>
-                <h2 class="section-title">Dni tygodnia</h2>
-              </div>
-              <span class="pill">Podział tygodnia</span>
-            </div>
-
-            <ul id="dashboardFrequencyList" class="list frequency-list">
-              <li>Brak danych.</li>
-            </ul>
-          </article>
-        </div>
-
-        <article class="card dashboard-section widget-neutral">
+        <!-- Metryki wykresu wyborze metryk -->
+        <article class="card dashboard-section widget-neutral dashboard-metrics-card">
           <div class="section-header">
             <div>
-              <p class="section-kicker">Najczęstsze ćwiczenia</p>
-              <h2 class="section-title">Najczęściej wykonywane ruchy</h2>
+              <p class="section-kicker">Analiza wydajności</p>
+              <h2 class="section-title">Porównanie czasowe</h2>
             </div>
-            <span class="pill">Największa objętość</span>
+            <div class="metric-toggle" id="metricsToggle" aria-label="Wybór metryki">
+              <button class="metric-btn active" data-metric="strength" type="button">Siła</button>
+              <button class="metric-btn" data-metric="volume" type="button">Objętość</button>
+              <button class="metric-btn" data-metric="density" type="button">Gęstość</button>
+            </div>
           </div>
 
-          <ul id="dashboardTopExercises" class="list">
-            <li>Brak danych.</li>
+          <p id="metricsSummary" class="text-muted">Brak danych do wykresu.</p>
+          <div class="chart-shell dashboard-chart-shell">
+            <canvas id="metricsChart" height="260"></canvas>
+          </div>
+
+          <div class="metrics-insight">
+            <div class="insight-item">
+              <span class="insight-label">Zmiana (30 dni):</span>
+              <span class="insight-value" id="metricsChartInsight">-</span>
+            </div>
+            <div class="insight-item">
+              <span class="insight-label">vs Poprzedni okres:</span>
+              <span class="insight-value" id="metricsComparison">-</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- PB Feed -->
+        <article class="card dashboard-section widget-pink dashboard-pb-feed">
+          <div class="section-header">
+            <div>
+              <p class="section-kicker">Rekordy</p>
+              <h2 class="section-title">PB Feed</h2>
+            </div>
+            <span class="pill" id="pbStreakBadge">-</span>
+          </div>
+
+          <p id="pbStreakInfo" class="text-muted">-</p>
+          <ul id="dashboardPBFeed" class="list pb-feed">
+            <li>Brak rekordów.</li>
           </ul>
         </article>
 
-        <article class="card dashboard-section widget-blue-soft">
+        <!-- Heatmapa + najlepsze okno treningu -->
+        <div class="dashboard-grid-2">
+          <article class="card dashboard-section widget-blue-soft dashboard-heatmap-card">
+            <div class="section-header">
+              <div>
+                <p class="section-kicker">Częstotliwość</p>
+                <h2 class="section-title">Heatmapa dni i godzin</h2>
+              </div>
+              <span class="pill">12 tygodni</span>
+            </div>
+
+            <p id="heatmapSummary" class="text-muted">Brak danych.</p>
+            <div class="heatmap-container">
+              <div id="trainingHeatmap" class="heatmap-grid" aria-label="Heatmapa treningów"></div>
+            </div>
+          </article>
+
+          <article class="card dashboard-section widget-dark dashboard-time-window-card">
+            <div class="section-header">
+              <div>
+                <p class="section-kicker">Optymalny czas</p>
+                <h2 class="section-title">Najlepsze okno treningu</h2>
+              </div>
+              <span class="pill" id="bestWindowStatus">-</span>
+            </div>
+
+            <div class="time-window-info">
+              <p id="bestWindowText" class="text-muted">-</p>
+              <p id="breakWarning" class="text-warning hidden">⚠️ Ryzyko wypadnięcia z rytmu: brak treningu przez 4+ dni</p>
+            </div>
+          </article>
+        </div>
+
+        <article class="card dashboard-section widget-neutral dashboard-top-exercises-pro">
           <div class="section-header">
             <div>
-              <p class="section-kicker">Objętość / mapa ciepła</p>
-              <h2 class="section-title">Aktywność z ostatnich 12 tygodni</h2>
+              <p class="section-kicker">Trending</p>
+              <h2 class="section-title">Top 8 ćwiczeń</h2>
             </div>
-            <span class="pill">Opcjonalne</span>
           </div>
 
-          <p id="dashboardVolumeSummary" class="text-muted">Brak danych o objętości.</p>
-          <div id="dashboardHeatmap" class="heatmap-grid" aria-label="Mapa ciepła aktywności"></div>
+          <ul id="dashboardTopExercisesPro" class="list exercises-pro-list">
+            <li>Brak danych.</li>
+          </ul>
         </article>
       </section>
     </main>
