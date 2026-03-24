@@ -1,3 +1,71 @@
+// Render progress comparison for latest vs previous workout
+function renderExerciseProgressComparison(workouts, exercisesByWorkout) {
+  const progressList = document.getElementById("progressComparisonList");
+  if (!progressList) return;
+
+  if (!workouts || workouts.length < 2) {
+    progressList.innerHTML = '<li>Brak danych do porównania.</li>';
+    return;
+  }
+
+  // Sort workouts by date descending
+  const sortedWorkouts = [...workouts].sort((a, b) => new Date(b.date) - new Date(a.date));
+  const latest = sortedWorkouts[0];
+  const previous = sortedWorkouts[1];
+
+  const latestExercises = (exercisesByWorkout[latest.id] || []).reduce((acc, ex) => {
+    acc[ex.name] = ex;
+    return acc;
+  }, {});
+  const previousExercises = (exercisesByWorkout[previous.id] || []).reduce((acc, ex) => {
+    acc[ex.name] = ex;
+    return acc;
+  }, {});
+
+  const allExerciseNames = Array.from(new Set([
+    ...Object.keys(latestExercises),
+    ...Object.keys(previousExercises),
+  ]));
+
+  const items = allExerciseNames.map((name) => {
+    const latestEx = latestExercises[name];
+    const prevEx = previousExercises[name];
+    let diff = null;
+    let diffText = '-';
+    let diffClass = '';
+
+    // Compare by max weight (or total volume if you prefer)
+    const getMaxWeight = (ex) => {
+      if (!ex || !ex.sets) return NaN;
+      let max = NaN;
+      try {
+        max = Math.max(...ex.sets.map(s => parseFloat(s.weight || 0)));
+      } catch {}
+      return max;
+    };
+    const latestWeight = getMaxWeight(latestEx);
+    const prevWeight = getMaxWeight(prevEx);
+    if (!isNaN(latestWeight) && !isNaN(prevWeight)) {
+      diff = latestWeight - prevWeight;
+      if (diff > 0) {
+        diffText = `+${diff.toFixed(1)} kg↑`;
+        diffClass = 'progress-up';
+      } else if (diff < 0) {
+        diffText = `${diff.toFixed(1)} kg↓`;
+        diffClass = 'progress-down';
+      } else {
+        diffText = '0 kg';
+        diffClass = '';
+      }
+    } else if (!isNaN(latestWeight)) {
+      diffText = `${latestWeight.toFixed(1)} kg`;
+      diffClass = '';
+    }
+    return `<li><span>${name}</span> <span class="progress-diff ${diffClass}">${diffText}</span></li>`;
+  });
+
+  progressList.innerHTML = items.length ? items.join('') : '<li>Brak danych do porównania.</li>';
+}
 import {
   auth,
   db,
@@ -630,6 +698,8 @@ async function initDashboardPage(user) {
 
     renderDashboardStats(scopedWorkouts, scopedExercisesByWorkout, rangeDays, userProfile);
     renderDashboardPoints(scopedWorkouts, scopedExercisesByWorkout, scopedGlobalPointsEntry);
+    // Render progress comparison for latest workout
+    renderExerciseProgressComparison(scopedWorkouts, scopedExercisesByWorkout);
   };
 
   dashboardStrengthRange = globalDataRangeDays;

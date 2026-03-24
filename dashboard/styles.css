@@ -1,1 +1,35 @@
+/* Progress comparison list styles */
+.progress-comparison-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.progress-comparison-list li {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	font-size: 1.08em;
+	padding: 2px 0 2px 0;
+}
+.progress-diff {
+	min-width: 70px;
+	text-align: right;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+.progress-up {
+	color: #15785c !important;
+}
+.progress-down {
+	color: #b73737 !important;
+}
+/* Ensure all dashboard text is dark for visibility */
+.dashboard-section, .dashboard-section * {
+	color: #181818 !important;
+}
+
+/* Optionally, make background a bit off-white for contrast */
+.dashboard-section {
+	background: #f7f7f7 !important;
+}
 @import url("../styles.css");

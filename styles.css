@@ -1,3 +1,5 @@
+
+@import url("https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap");
 /* Stacked minimalist style for workouts page */
 .stacked-history-entry {
   display: flex;
@@ -32,7 +34,6 @@
   line-height: 1.3;
   word-break: break-word;
 }
-@import url("https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap");
 
 :root {
   --bg: #bfc0c2;
